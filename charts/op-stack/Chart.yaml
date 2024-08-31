@@ -1,0 +1,11 @@
+apiVersion: v2
+name: op-stack
+description: A chart for running optimism with erigon and geth
+type: application
+version: 0.0.0
+appVersion: "0.0.0"
+
+dependencies:
+- name: erigon
+  version: 0.0.5
+  repository: 

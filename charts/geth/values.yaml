@@ -1,0 +1,113 @@
+replicaCount: 1
+
+image:
+  repository: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-geth
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag:
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: LoadBalancer
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+#   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+livenessProbe: true
+readinessProbe: true
+
+#######################################
+# geth settings used as args
+#######################################
+
+network: op-mainnet  # Put either `mainnet`, `optimism-goerli`, `goerli`, or `sepolia` for pre-defined settings.
+networkID: 10
+
+rpc:
+  http:
+    enabled: true
+    addr: 0.0.0.0
+    api: "net,eth,personal,web3,debug,engine,txpool"
+    corsDomain: "*"
+    port:
+      name: rpc-http-port
+      containerPort: 8545
+      hostPort: 8545
+  ws:
+    enabled: true
+    addr: 0.0.0.0
+    port:
+      name: rpc-ws-port
+      containerPort: 8546
+      hostPort: 8546
+    api: "net,eth,personal,web3,engine,txpool"
+    origins: "*"
+
+authrpc:
+  enabled: true
+  addr: 0.0.0.0
+  vhosts: "*"
+  port:
+    name: authrpc-port
+    containerPort: 8551
+    hostPort: 8551
+  # best practice suggest to create your own secret and indicate only the secret name and key to avoid having it in plain text
+  # if you still want create the secret with the chart, mention the jwt in the value field
+  jwtSecret:
+    secretName: authrpc-jwt
+    key: jwt
+    # replace 'false' by your jwt to create the secret with your chart
+    value: false
+
+pprof:
+  enabled: true
+  addr: 0.0.0.0
+  port:
+    name: pprof-port
+    containerPort: 6060
+    hostPort: 6060
+
+metrics:
+  enabled: true
+  addr: 0.0.0.0
+  port:
+    name: metrics-port
+    containerPort: 7300
+    hostPort: 7300
+
+# data path that geth db will be stored. it will go under persistence db.
+dataPath: /data
+
+# use this if you want to import the chain data
+importTarURL: false
+
+syncMode: "full"
+
+maxPeers: 50
+cache: 4096
+
+extraArgs: []
+
+secretForVolumeMountDir: /secrets
+
+persistence:
+  # For Optimism Testnet, you probably need at least 100Gi for the full-node.
+  size: 200Gi
+  mountDir: /root
+  name: data

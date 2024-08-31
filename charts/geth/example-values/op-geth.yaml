@@ -1,0 +1,84 @@
+nameOverride: ""
+fullnameOverride: ""
+service:
+  type: NodePort
+
+predefinedNetwork: op-mainnet  # Put either `mainnet`, `optimism-goerli`, `goerli`, or `sepolia` for pre-defined settings.
+
+livenessProbe: true
+readinessProbe: true
+
+secretForVolumeMountDir: /secrets
+
+rpc:
+  http:
+    enabled: true
+    addr: 0.0.0.0
+    api: "net,eth,personal,web3,debug,engine,txpool"
+    corsDomain: "*"
+    port:
+      name: rpc-http-port
+      containerPort: 8545
+      hostPort: 8545
+  ws:
+    enabled: true
+    addr: 0.0.0.0
+    port:
+      name: rpc-ws-port
+      containerPort: 8546
+      hostPort: 8546
+    api: "net,eth,personal,web3,engine,txpool"
+    origins: "*"
+
+authrpc:
+  enabled: true
+  addr: 0.0.0.0
+  port:
+    name: authrpc-port
+    containerPort: 8551
+    hostPort: 8551
+  jwtSecret:
+    file: 94cd930435ca0fa8ff8690e7bf6671c9f75bfc9f58132ef24b2cf074aa2b5a2c
+    filename: jwt-secret.txt
+  vhosts: "*"
+
+pprof:
+  enabled: true
+  addr: 0.0.0.0
+  port:
+    name: pprof-port
+    containerPort: 6060
+    hostPort: 6060
+
+metrics:
+  enabled: true
+  addr: 0.0.0.0
+  port:
+    name: metrics-port
+    containerPort: 7300
+    hostPort: 7300
+
+# data path that geth db will be stored. it will go under persistence db.
+dataPath: /data
+
+syncMode: full
+
+networkID: 10
+
+maxPeers: 0
+cache: 512
+
+# op-geth specific
+args:
+  - --verbosity=3
+  - --http.vhosts="*"
+  - --rollup.disabletxpoolgossip=true
+  - --rollup.sequencerhttp=https://mainnet-sequencer.optimism.io/
+  - --op-network=op-mainnet
+#   - "--nodiscover"
+#   - "--allow-insecure-unlock"
+
+persistence:
+  size: 40Gi
+  mountDir: /root
+  name: data

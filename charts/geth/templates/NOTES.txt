@@ -1,0 +1,19 @@
+## Geth ##
+Welcome to geth, an execution engine for EVM network.
+
+## Network Config ##
+Predefined Network: {{ .Values.network | default "No" }}
+ChainID: {{ .Values.networkID | default "Unknown" }}
+
+## For local env ##
+Please run the following command to have access to the geth.
+  $ kubectl port-forward service/{{ .Release.Name }} {{- if .Values.rpc.http.enabled }} {{ .Values.rpc.http.port.hostPort }}{{- end }} {{- if .Values.authrpc.enabled }} {{ .Values.authrpc.port.hostPort }} {{- end }} {{- if .Values.rpc.ws.enabled }} {{ .Values.rpc.ws.port.hostPort }}{{- end }} {{- if .Values.metrics.enabled }} {{ .Values.metrics.port.hostPort }}{{- end }}
+
+## For logs ##
+  $ kubectl logs -f service/{{ include "geth.fullname" . }}
+
+{{- if .Values.authrpc.jwtSecret.value }}
+
+## SECURITY WARNING ##
+Your jwt is in plain text in your config. Please create your own secret and deploy it independantly from the chart to keep it more secure.
+{{- end }}
