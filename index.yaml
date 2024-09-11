@@ -1,0 +1,49 @@
+apiVersion: v1
+entries:
+  erigon:
+  - apiVersion: v2
+    appVersion: v1.10.26
+    created: "2024-09-11T01:24:47.336959318Z"
+    description: A Helm chart for Ethereum Execution Engine for efficiency frontier,
+      erigon.
+    digest: 40d35c85195729b9fe24c33822c7342344f073d93af5622d347d7c5baa0fcd0e
+    name: erigon
+    type: application
+    urls:
+    - https://github.com/InfraDAO/helm-charts/releases/download/erigon-0.0.5/erigon-0.0.5.tgz
+    version: 0.0.5
+  geth:
+  - apiVersion: v2
+    appVersion: v1.101408.0
+    created: "2024-09-11T01:24:47.457706421Z"
+    description: A Helm chart for Ethereum Execution Engine, geth.
+    digest: 2662b9106a4dd0339556580642fe7c0414e0ea958838af25a397fe4f0004b9bb
+    name: geth
+    type: application
+    urls:
+    - https://github.com/InfraDAO/helm-charts/releases/download/geth-0.0.4/geth-0.0.4.tgz
+    version: 0.0.4
+  op-node:
+  - apiVersion: v2
+    appVersion: v1.9.1
+    created: "2024-09-11T01:24:47.567965321Z"
+    description: A consensus engine for OP Stack. You can build a new OP Stack chain
+      or connect to an existing one.
+    digest: 164faa2d05777824706996e4d9357fdb03d3565becf9b93cd564a61a857a29eb
+    name: op-node
+    type: application
+    urls:
+    - https://github.com/InfraDAO/helm-charts/releases/download/op-node-0.0.3/op-node-0.0.3.tgz
+    version: 0.0.3
+  op-stack:
+  - apiVersion: v2
+    appVersion: 0.0.0
+    created: "2024-09-11T01:24:47.67074624Z"
+    description: A chart for running optimism with erigon and geth
+    digest: e753826d4f35085fda8f8bdd436979f19de585a3e71a9e9fbcf4c92c947e5e25
+    name: op-stack
+    type: application
+    urls:
+    - https://github.com/InfraDAO/helm-charts/releases/download/op-stack-0.0.0/op-stack-0.0.0.tgz
+    version: 0.0.0
+generated: "2024-09-11T01:24:47.670754876Z"
