@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "geth.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ template "geth.name" . }}
+  serviceName: {{ include "geth.name" . }}
   selector:
     matchLabels:
       {{- include "geth.selectorLabels" . | nindent 6 }}
@@ -19,158 +19,147 @@ spec:
         command: ["/bin/sh", "-c"]
         args:
           - |
-            rm -rf {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}/geth/LOCK  # remove lock
-            rm -rf {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}/geth/nodekey  # remove nodekey
+            rm -rf /data{{ .Values.geth.datadir }}/geth/LOCK  # remove lock
+            rm -rf /data{{ .Values.geth.datadir }}/geth/nodekey  # remove nodekey
         image: busybox
         imagePullPolicy: IfNotPresent
         volumeMounts:
-        - name: {{ .Values.persistence.name }}
-          mountPath: {{ .Values.persistence.mountDir }}
+        - name: data
+          mountPath: /data
       {{- if .Values.importTarURL }}
       - name: import-chain
         command: ["/bin/sh", "-c"]
         args:
           - |
-            if [ -f "{{ .Values.persistence.mountDir }}/imported" ]; then
+            if [ -f "/data/imported" ]; then
             echo "already imported"
             ls /root/data
             else
             echo "Chain import start"
-            wget -O {{ .Values.persistence.mountDir }}/imported.tar {{ .Values.importTarURL }}  # download from URL
-            rm -rf {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}  # clean dir
-            mkdir -p {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}
-            tar -xf {{ .Values.persistence.mountDir }}/imported.tar -C {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}/
-            rm -rf {{ .Values.persistence.mountDir }}/imported.tar
-            touch {{ .Values.persistence.mountDir }}/imported
-            ls {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}
+            wget -O /data/imported.tar {{ .Values.importTarURL }}  # download from URL
+            rm -rf /data{{ .Values.geth.datadir }}  # clean dir
+            mkdir -p /data{{ .Values.geth.datadir }}
+            tar -xf /data/imported.tar -C /data{{ .Values.geth.datadir }}/
+            rm -rf /data/imported.tar
+            touch /data/imported
+            ls /data{{ .Values.geth.datadir }}
             echo "Chain import finished"
             fi
         image: busybox
         imagePullPolicy: IfNotPresent
         volumeMounts:
-        - name: {{ .Values.persistence.name }}
-          mountPath: {{ .Values.persistence.mountDir }}
+        - name: data
+          mountPath: /data
       {{- end }}
       containers:
         - name: {{ template "geth.fullname" . }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            {{- if .Values.rpc.http.enabled }}
             # HTTP RPC
-            - name: {{ .Values.rpc.http.port.name }}
-              containerPort: {{ .Values.rpc.http.port.containerPort }}
+            {{- if .Values.geth.http.enabled }}
+            - name: http-rpc
+              containerPort: {{ .Values.geth.http.port }}
             {{- end }}
-            {{- if .Values.rpc.ws.enabled }}
             # WS RPC
-            - name: {{ .Values.rpc.ws.port.name }}
-              containerPort: {{ .Values.rpc.ws.port.containerPort }}
+            {{- if .Values.geth.ws.enabled }}
+            - name: ws-rpc
+              containerPort: {{ .Values.geth.ws.port }}
             {{- end }}
-            {{- if .Values.authrpc.enabled }}
             # AuthRPC
-            - name: {{ .Values.authrpc.port.name }}
-              containerPort: {{ .Values.authrpc.port.containerPort }}
+            {{- if .Values.geth.authrpc.enabled }}
+            - name: auth-rpc
+              containerPort: {{ .Values.geth.authrpc.port }}
             {{- end }}
-            {{- if .Values.metrics.enabled }}
             # Metrics
-            - name: {{ .Values.metrics.port.name }}
-              containerPort: {{ .Values.metrics.port.containerPort }}
+            {{- if .Values.geth.metrics.enabled }}
+            - name: metrics
+              containerPort: {{ .Values.geth.metrics.port }}
             {{- end }}
-            {{- if .Values.pprof.enabled }}
             # pprof
-            - name: {{ .Values.pprof.port.name }}
-              containerPort: {{ .Values.pprof.port.containerPort }}
+            {{- if .Values.geth.pprof.enabled }}
+            - name: pprof
+              containerPort: {{ .Values.geth.pprof.port }}
             {{- end }}
           command: ["/usr/local/bin/geth"]
           args:
-            # network settings
-            {{- if .Values.networkID }}
-            - --networkid={{ .Values.networkID }}
-            {{- end }}
-            {{- if .Values.network }}
-            - --op-network={{ .Values.network }}
-            {{- end }}
+            - --op-network={{ .Values.geth.network }}
+            - --datadir={{ .Values.geth.datadir }}
+            - --syncmode={{.Values.syncMode}}
 
-            {{- if .Values.rpc.http.enabled }}
             # HTTP RPC
+            {{- if .Values.geth.http.enabled }}
             - --http
-            - --http.api={{.Values.rpc.http.api}}
-            - --http.addr={{ .Values.rpc.http.addr }}
-            - --http.port={{ .Values.rpc.http.port.containerPort }}
-            - --http.corsdomain={{ .Values.rpc.http.corsDomain }}
+            - --http.addr={{ .Values.geth.http.addr }}
+            - --http.port={{ .Values.geth.http.port }}
+            - --http.vhosts={{ .Values.geth.http.vhosts }}
+            - --http.corsdomain={{ .Values.geth.http.corsDomain }}
             {{- end }}
 
-            {{- if .Values.rpc.ws.enabled }}
             # WS RPC
+            {{- if .Values.geth.ws.enabled }}
             - --ws
-            - --ws.addr={{ .Values.rpc.ws.addr }}
-            - --ws.port={{.Values.rpc.ws.port.containerPort }}
-            - --ws.api={{.Values.rpc.ws.api}}
-            - --ws.origins={{.Values.rpc.ws.origins}}
+            - --ws.addr={{ .Values.geth.ws.addr }}
+            - --ws.port={{.Values.geth.ws.port }}
+            - --ws.origins={{.Values.geth.ws.origins}}
             {{- end }}
 
-            {{- if .Values.authrpc.enabled }}
             # Auth RPC
+            {{- if .Values.geth.authrpc.enabled }}
             - --authrpc.addr={{ .Values.authrpc.addr }}
-            - --authrpc.port={{ .Values.authrpc.port.containerPort }}
+            - --authrpc.port={{ .Values.authrpc.port }}
             - --authrpc.vhosts={{.Values.authrpc.vhosts}}
-            - --authrpc.jwtsecret={{ .Values.secretForVolumeMountDir }}/{{.Values.authrpc.jwtSecret.key}}
+            - --authrpc.jwtsecret=/jwt/{{ .Values.geth.jwt.existingSecret.key | default jwtSecret }}
             {{- end }}
 
-            {{- if .Values.pprof.enabled }}
             # pprof
+            {{- if .Values.geth.pprof.enabled }}
             - --pprof
-            - --pprof.addr={{ .Values.pprof.addr }}
-            - --pprof.port={{ .Values.pprof.port.containerPort }}
+            - --pprof.addr={{ .Values.geth.pprof.addr }}
+            - --pprof.port={{ .Values.geth.pprof.port }}
             {{- end }}
 
-            {{- if .Values.metrics.enabled }}
             # metrics
+            {{- if .Values.geth.metrics.enabled }}
             - --metrics
-            - --metrics.addr={{ .Values.metrics.addr }}
-            - --metrics.port={{ .Values.metrics.port.containerPort }}
+            - --metrics.addr={{ .Values.geth.metrics.addr }}
+            - --metrics.port={{ .Values.geth.metrics.port }}
             {{- end }}
-            - --datadir={{ .Values.persistence.mountDir }}{{ .Values.dataPath }}
 
-            {{- if .Values.importTarURL }}
             # GC archive mode is required when we import the chain. Otherwise, imported data will be removed.
+            {{- if .Values.importTarURL }}
             - --gcmode=archive
             {{- end }}
 
-            - --maxpeers={{ .Values.maxPeers }}
-            - --cache={{.Values.cache}}
-            - --syncmode={{.Values.syncMode}}
-
-            {{- with .Values.extraArgs }}
             # Other Arguments
+            {{- with .Values.extraArgs }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
-          {{- if .Values.livenessProbe }}
+          {{- if and .Values.livenessProbe .Values.geth.http.enabled }}
           livenessProbe:
             initialDelaySeconds: 15
             periodSeconds: 60
             tcpSocket:
-              port: {{ .Values.rpc.http.port.name }}
+              port: http-rpc
           {{- end }}
-          {{- if .Values.readinessProbe }}
+          {{- if and .Values.readinessProbe .Values.geth.http.enabled }}
           readinessProbe:
-            # TODO: replace it to real http request.
             initialDelaySeconds: 15
             periodSeconds: 60
             tcpSocket:
-              port: {{ .Values.rpc.http.port.name }}
+              port: http-rpc
           {{- end }}
           volumeMounts:
-          - name: {{ .Values.persistence.name }}
-            mountPath: {{ .Values.persistence.mountDir }}
-          - mountPath: {{ .Values.secretForVolumeMountDir }} # mounts all files in the Secrets.
-            name: {{ .Values.authrpc.jwtSecret.secretName }}
+          - name: data
+            mountPath: /data
+          - name: jwt
+            mountPath: /jwt
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: {{ .Values.authrpc.jwtSecret.secretName }}
+        - name: jwt
           secret:
-            secretName: {{ .Values.authrpc.jwtSecret.secretName }}
+            secretName: {{ .Values.geth.existingSecret.name | default jwtSecret }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -183,16 +172,16 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+  {{- with .Values.volumeClaimSpec }}
   volumeClaimTemplates:
   - metadata:
-      name: {{ .Values.persistence.name }}
+      name: data
       annotations:
         "helm.sh/resource-policy": keep
       labels:
         {{- include "geth.selectorLabels" . | nindent 8 }}
     spec:
       accessModes:
-      - "ReadWriteOnce"
+        {{- toYaml .accessModes | nindent 8 }}
       resources:
-        requests:
-          storage: {{ .Values.persistence.size }}
+        {{- toYaml .resources | nindent 8 }}

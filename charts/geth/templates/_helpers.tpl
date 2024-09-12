@@ -24,13 +24,6 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
-secret vault name
-*/}}
-{{- define "geth.secretname" -}}
-{{ include "geth.fullname" . }}-secret
-{{- end }}
-
-{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "geth.chart" -}}

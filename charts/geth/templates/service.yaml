@@ -8,30 +8,34 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     # HTTP RPC
-    - name: {{ .Values.rpc.http.port.name }}
-      port: {{ .Values.rpc.http.port.hostPort }}
-      targetPort: {{ .Values.rpc.http.port.containerPort }}
+    {{- if .Values.geth.http.enabled }}
+    - name: http-rpc
+      port: {{ .Values.geth.http.port }}
+      targetPort: {{ .Values.geth.http.port }}
+    {{- end }}
     # WS RPC
-    - name: {{ .Values.rpc.ws.port.name }}
-      port: {{ .Values.rpc.ws.port.hostPort }}
-      targetPort: {{ .Values.rpc.ws.port.containerPort }}
-    {{- if .Values.authrpc.enabled }}
+    {{- if .Values.geth.ws.enabled }}
+    - name: ws-rpc
+      port: {{ .Values.geth.ws.port }}
+      targetPort: {{ .Values.geth.ws.port }}
+    {{- end }}
     # AuthRPC
-    - name: {{ .Values.authrpc.port.name }}
-      port: {{ .Values.authrpc.port.hostPort }}
-      targetPort: {{ .Values.authrpc.port.containerPort }}
+    {{- if .Values.geth.authrpc.enabled }}
+    - name: auth-rpc
+      port: {{ .Values.geth.authrpc.port }}
+      targetPort: {{ .Values.geth.authrpc.port }}
     {{- end }}
-    {{- if .Values.metrics.enabled }}
     # Metrics
-    - name: {{ .Values.metrics.port.name }}
-      port: {{ .Values.metrics.port.hostPort }}
-      targetPort: {{ .Values.metrics.port.containerPort }}
+    {{- if .Values.geth.metrics.enabled }}
+    - name: metrics
+      port: {{ .Values.geth.metrics.port }}
+      targetPort: {{ .Values.geth.metrics.port }}
     {{- end }}
-    {{- if .Values.pprof.enabled }}
     # pprof
-    - name: {{ .Values.pprof.port.name }}
-      port: {{ .Values.pprof.port.hostPort }}
-      targetPort: {{ .Values.pprof.port.containerPort }}
+    {{- if .Values.geth.pprof.enabled }}
+    - name: pprof
+      port: {{ .Values.geth.pprof.port }}
+      targetPort: {{ .Values.geth.pprof.port }}
     {{- end }}
   selector:
     {{- include "geth.selectorLabels" . | nindent 4 }}
