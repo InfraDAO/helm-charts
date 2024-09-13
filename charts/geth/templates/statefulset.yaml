@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "geth.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ include "geth.name" . }}
+  serviceName: {{ include "geth.fullname" . }}
   selector:
     matchLabels:
       {{- include "geth.selectorLabels" . | nindent 6 }}
@@ -56,28 +56,28 @@ spec:
           image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            # HTTP RPC
             {{- if .Values.geth.http.enabled }}
+            # HTTP RPC
             - name: http-rpc
               containerPort: {{ .Values.geth.http.port }}
             {{- end }}
-            # WS RPC
             {{- if .Values.geth.ws.enabled }}
+            # WS RPC
             - name: ws-rpc
               containerPort: {{ .Values.geth.ws.port }}
             {{- end }}
-            # AuthRPC
             {{- if .Values.geth.authrpc.enabled }}
+            # AuthRPC
             - name: auth-rpc
               containerPort: {{ .Values.geth.authrpc.port }}
             {{- end }}
-            # Metrics
             {{- if .Values.geth.metrics.enabled }}
+            # Metrics
             - name: metrics
               containerPort: {{ .Values.geth.metrics.port }}
             {{- end }}
-            # pprof
             {{- if .Values.geth.pprof.enabled }}
+            # pprof
             - name: pprof
               containerPort: {{ .Values.geth.pprof.port }}
             {{- end }}
@@ -85,10 +85,10 @@ spec:
           args:
             - --op-network={{ .Values.geth.network }}
             - --datadir={{ .Values.geth.datadir }}
-            - --syncmode={{.Values.syncMode}}
+            - --syncmode={{ .Values.geth.syncmode }}
 
-            # HTTP RPC
             {{- if .Values.geth.http.enabled }}
+            # HTTP RPC
             - --http
             - --http.addr={{ .Values.geth.http.addr }}
             - --http.port={{ .Values.geth.http.port }}
@@ -96,43 +96,43 @@ spec:
             - --http.corsdomain={{ .Values.geth.http.corsDomain }}
             {{- end }}
 
-            # WS RPC
             {{- if .Values.geth.ws.enabled }}
+            # WS RPC
             - --ws
             - --ws.addr={{ .Values.geth.ws.addr }}
             - --ws.port={{.Values.geth.ws.port }}
             - --ws.origins={{.Values.geth.ws.origins}}
             {{- end }}
 
-            # Auth RPC
             {{- if .Values.geth.authrpc.enabled }}
-            - --authrpc.addr={{ .Values.authrpc.addr }}
-            - --authrpc.port={{ .Values.authrpc.port }}
-            - --authrpc.vhosts={{.Values.authrpc.vhosts}}
-            - --authrpc.jwtsecret=/jwt/{{ .Values.geth.jwt.existingSecret.key | default jwtSecret }}
+            # Auth RPC
+            - --authrpc.addr={{ .Values.geth.authrpc.addr }}
+            - --authrpc.port={{ .Values.geth.authrpc.port }}
+            - --authrpc.vhosts={{.Values.geth.authrpc.vhosts}}
+            - --authrpc.jwtsecret=/jwt/{{ .Values.geth.jwt.existingSecret.key | default "jwtSecret" }}
             {{- end }}
 
-            # pprof
             {{- if .Values.geth.pprof.enabled }}
+            # pprof
             - --pprof
             - --pprof.addr={{ .Values.geth.pprof.addr }}
             - --pprof.port={{ .Values.geth.pprof.port }}
             {{- end }}
 
-            # metrics
             {{- if .Values.geth.metrics.enabled }}
+            # metrics
             - --metrics
             - --metrics.addr={{ .Values.geth.metrics.addr }}
             - --metrics.port={{ .Values.geth.metrics.port }}
             {{- end }}
 
-            # GC archive mode is required when we import the chain. Otherwise, imported data will be removed.
             {{- if .Values.importTarURL }}
+            # GC archive mode is required when we import the chain. Otherwise, imported data will be removed.
             - --gcmode=archive
             {{- end }}
 
-            # Other Arguments
             {{- with .Values.extraArgs }}
+            # Other Arguments
             {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- if and .Values.livenessProbe .Values.geth.http.enabled }}
@@ -159,7 +159,7 @@ spec:
       volumes:
         - name: jwt
           secret:
-            secretName: {{ .Values.geth.existingSecret.name | default jwtSecret }}
+            secretName: {{ .Values.geth.jwt.existingSecret.name | default "jwt-secret" }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -172,16 +172,12 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-  {{- with .Values.volumeClaimSpec }}
   volumeClaimTemplates:
   - metadata:
       name: data
       annotations:
         "helm.sh/resource-policy": keep
       labels:
-        {{- include "geth.selectorLabels" . | nindent 8 }}
+        {{- include "geth.selectorLabels" $ | nindent 8 }}
     spec:
-      accessModes:
-        {{- toYaml .accessModes | nindent 8 }}
-      resources:
-        {{- toYaml .resources | nindent 8 }}
+      {{- toYaml .Values.volumeClaimSpec | nindent 8 }}

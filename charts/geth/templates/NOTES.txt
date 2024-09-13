@@ -2,18 +2,11 @@
 Welcome to geth, an execution engine for EVM network.
 
 ## Network Config ##
-Predefined Network: {{ .Values.network | default "No" }}
-ChainID: {{ .Values.networkID | default "Unknown" }}
+Predefined Network: {{ .Values.geth.network | default "No" }}
 
 ## For local env ##
 Please run the following command to have access to the geth.
-  $ kubectl port-forward service/{{ .Release.Name }} {{- if .Values.rpc.http.enabled }} {{ .Values.rpc.http.port.hostPort }}{{- end }} {{- if .Values.authrpc.enabled }} {{ .Values.authrpc.port.hostPort }} {{- end }} {{- if .Values.rpc.ws.enabled }} {{ .Values.rpc.ws.port.hostPort }}{{- end }} {{- if .Values.metrics.enabled }} {{ .Values.metrics.port.hostPort }}{{- end }}
+  $ kubectl port-forward service/{{ .Release.Name }} {{- if .Values.geth.http.enabled }} {{ .Values.geth.http.port }}{{- end }} {{- if .Values.geth.authrpc.enabled }} {{ .Values.geth.authrpc.port }} {{- end }} {{- if .Values.geth.ws.enabled }} {{ .Values.geth.ws.port }}{{- end }} {{- if .Values.geth.metrics.enabled }} {{ .Values.geth.metrics.port }}{{- end }}
 
 ## For logs ##
   $ kubectl logs -f service/{{ include "geth.fullname" . }}
-
-{{- if .Values.authrpc.jwtSecret.value }}
-
-## SECURITY WARNING ##
-Your jwt is in plain text in your config. Please create your own secret and deploy it independantly from the chart to keep it more secure.
-{{- end }}

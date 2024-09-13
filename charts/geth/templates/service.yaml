@@ -7,32 +7,32 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    # HTTP RPC
     {{- if .Values.geth.http.enabled }}
+    # HTTP RPC
     - name: http-rpc
       port: {{ .Values.geth.http.port }}
       targetPort: {{ .Values.geth.http.port }}
     {{- end }}
-    # WS RPC
     {{- if .Values.geth.ws.enabled }}
+    # WS RPC
     - name: ws-rpc
       port: {{ .Values.geth.ws.port }}
       targetPort: {{ .Values.geth.ws.port }}
     {{- end }}
-    # AuthRPC
     {{- if .Values.geth.authrpc.enabled }}
+    # AuthRPC
     - name: auth-rpc
       port: {{ .Values.geth.authrpc.port }}
       targetPort: {{ .Values.geth.authrpc.port }}
     {{- end }}
-    # Metrics
     {{- if .Values.geth.metrics.enabled }}
+    # Metrics
     - name: metrics
       port: {{ .Values.geth.metrics.port }}
       targetPort: {{ .Values.geth.metrics.port }}
     {{- end }}
-    # pprof
     {{- if .Values.geth.pprof.enabled }}
+    # pprof
     - name: pprof
       port: {{ .Values.geth.pprof.port }}
       targetPort: {{ .Values.geth.pprof.port }}
