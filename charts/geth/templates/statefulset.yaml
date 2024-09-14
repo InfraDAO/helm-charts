@@ -56,74 +56,31 @@ spec:
           image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            {{- if .Values.geth.http.enabled }}
-            # HTTP RPC
-            - name: http-rpc
-              containerPort: {{ .Values.geth.http.port }}
+            {{- range $key, $value := .Values.geth.ports }}
+            {{- if or $value.enabled (eq $key "authrpc") }}
+            - name: {{ $key }}
+              containerPort: {{ $value.port }}
             {{- end }}
-            {{- if .Values.geth.ws.enabled }}
-            # WS RPC
-            - name: ws-rpc
-              containerPort: {{ .Values.geth.ws.port }}
-            {{- end }}
-            {{- if .Values.geth.authrpc.enabled }}
-            # AuthRPC
-            - name: auth-rpc
-              containerPort: {{ .Values.geth.authrpc.port }}
-            {{- end }}
-            {{- if .Values.geth.metrics.enabled }}
-            # Metrics
-            - name: metrics
-              containerPort: {{ .Values.geth.metrics.port }}
-            {{- end }}
-            {{- if .Values.geth.pprof.enabled }}
-            # pprof
-            - name: pprof
-              containerPort: {{ .Values.geth.pprof.port }}
             {{- end }}
           command: ["/usr/local/bin/geth"]
           args:
+            # Basic geth configs
             - --op-network={{ .Values.geth.network }}
             - --datadir={{ .Values.geth.datadir }}
             - --syncmode={{ .Values.geth.syncmode }}
+            - --rollup.sequencerhttp={{ .Values.geth.rollup.sequencerhttp }}
 
-            {{- if .Values.geth.http.enabled }}
-            # HTTP RPC
-            - --http
-            - --http.addr={{ .Values.geth.http.addr }}
-            - --http.port={{ .Values.geth.http.port }}
-            - --http.vhosts={{ .Values.geth.http.vhosts }}
-            - --http.corsdomain={{ .Values.geth.http.corsDomain }}
+            # Loop through geth.ports values to set configs
+            {{- range $key, $value := .Values.geth.ports }}
+            {{- if or $value.enabled (eq $key "authrpc") }}
+            {{- range $config, $configValue := $value }}
+            {{- if eq $config "enabled" }}
+            - --{{ $key }}
+            {{- else }}
+            - --{{ $key }}.{{ $config }}={{ $configValue }}
             {{- end }}
-
-            {{- if .Values.geth.ws.enabled }}
-            # WS RPC
-            - --ws
-            - --ws.addr={{ .Values.geth.ws.addr }}
-            - --ws.port={{.Values.geth.ws.port }}
-            - --ws.origins={{.Values.geth.ws.origins}}
             {{- end }}
-
-            {{- if .Values.geth.authrpc.enabled }}
-            # Auth RPC
-            - --authrpc.addr={{ .Values.geth.authrpc.addr }}
-            - --authrpc.port={{ .Values.geth.authrpc.port }}
-            - --authrpc.vhosts={{.Values.geth.authrpc.vhosts}}
-            - --authrpc.jwtsecret=/jwt/{{ .Values.geth.jwt.existingSecret.key | default "jwtSecret" }}
             {{- end }}
-
-            {{- if .Values.geth.pprof.enabled }}
-            # pprof
-            - --pprof
-            - --pprof.addr={{ .Values.geth.pprof.addr }}
-            - --pprof.port={{ .Values.geth.pprof.port }}
-            {{- end }}
-
-            {{- if .Values.geth.metrics.enabled }}
-            # metrics
-            - --metrics
-            - --metrics.addr={{ .Values.geth.metrics.addr }}
-            - --metrics.port={{ .Values.geth.metrics.port }}
             {{- end }}
 
             {{- if .Values.importTarURL }}

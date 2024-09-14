@@ -7,35 +7,12 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    {{- if .Values.geth.http.enabled }}
-    # HTTP RPC
-    - name: http-rpc
-      port: {{ .Values.geth.http.port }}
-      targetPort: {{ .Values.geth.http.port }}
+    {{- range $key, $value := .Values.geth.ports }}
+    {{- if or $value.enabled (eq $key "authrpc") }}
+    - name: {{ $key }}
+      port: {{ $value.port }}
+      targetPort: {{ $value.port }}
     {{- end }}
-    {{- if .Values.geth.ws.enabled }}
-    # WS RPC
-    - name: ws-rpc
-      port: {{ .Values.geth.ws.port }}
-      targetPort: {{ .Values.geth.ws.port }}
-    {{- end }}
-    {{- if .Values.geth.authrpc.enabled }}
-    # AuthRPC
-    - name: auth-rpc
-      port: {{ .Values.geth.authrpc.port }}
-      targetPort: {{ .Values.geth.authrpc.port }}
-    {{- end }}
-    {{- if .Values.geth.metrics.enabled }}
-    # Metrics
-    - name: metrics
-      port: {{ .Values.geth.metrics.port }}
-      targetPort: {{ .Values.geth.metrics.port }}
-    {{- end }}
-    {{- if .Values.geth.pprof.enabled }}
-    # pprof
-    - name: pprof
-      port: {{ .Values.geth.pprof.port }}
-      targetPort: {{ .Values.geth.pprof.port }}
     {{- end }}
   selector:
     {{- include "geth.selectorLabels" . | nindent 4 }}

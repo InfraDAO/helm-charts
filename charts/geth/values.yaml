@@ -64,6 +64,7 @@ geth:
   network: op-mainnet
   datadir: /data
   syncmode: snap
+  rollup.sequencerhttp: https://mainnet-sequencer.optimism.io/
   # JWT for clients to authenticate with the authrpc. Specify either `existingSecret` OR `fromLiteral`.
   jwt:
     # Load the JWT from an existing Kubernetes Secret. Takes precedence over `fromLiteral` if set.
@@ -74,33 +75,31 @@ geth:
       key: null
     # Use this literal value for the JWT
     fromLiteral: null
-  http:
-    enabled: true
-    addr: 0.0.0.0
-    port: 8545
-    vhosts: "*"
-    corsDomain: "*"
-  ws:
-    enabled: false
-    addr: 0.0.0.0
-    port: 8546
-    origins: "*"
-  authrpc:
-    enabled: true
-    addr: 0.0.0.0
-    port: 8551
-    vhosts: "*"
-  rollup:
-    disabletxpoolgossip: true
-    sequencerhttp: https://mainnet-sequencer.optimism.io/
-  metrics:
-    enabled: false
-    addr: 0.0.0.0
-    port: 7300
-  pprof:
-    enabled: false
-    addr: 0.0.0.0
-    port: 6060
+  ports:
+    # authrpc is required
+    authrpc:
+      addr: 0.0.0.0
+      port: 8551
+      vhosts: "*"
+    http:
+      enabled: true
+      port: 8545
+      addr: 0.0.0.0
+      vhosts: "*"
+      corsDomain: "*"
+    ws:
+      enabled: false
+      addr: 0.0.0.0
+      port: 8546
+      origins: "*"
+    metrics:
+      enabled: false
+      addr: 0.0.0.0
+      port: 7300
+    pprof:
+      enabled: false
+      addr: 0.0.0.0
+      port: 6060
 
 # Additional CLI arguments
 extraArgs: []
