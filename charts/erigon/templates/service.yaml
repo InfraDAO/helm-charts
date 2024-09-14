@@ -7,27 +7,12 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    # HTTP RPC
-    - name: {{ .Values.rpc.http.port.name }}
-      port: {{ .Values.rpc.http.port.hostPort }}
-      targetPort: {{ .Values.rpc.http.port.containerPort }}
-    {{- if .Values.authrpc.enabled }}
-    # AuthRPC
-    - name: {{ .Values.authrpc.port.name }}
-      port: {{ .Values.authrpc.port.hostPort }}
-      targetPort: {{ .Values.authrpc.port.containerPort }}
+    {{- range $key, $value := .Values.erigon.ports }}
+    {{- if or $value.enabled (eq $key "authrpc") }}
+    - name: {{ $key }}
+      port: {{ $value.port }}
+      targetPort: {{ $value.port }}
     {{- end }}
-    {{- if .Values.metrics.enabled }}
-    # Metrics
-    - name: {{ .Values.metrics.port.name }}
-      port: {{ .Values.metrics.port.hostPort }}
-      targetPort: {{ .Values.metrics.port.containerPort }}
-    {{- end }}
-    {{- if .Values.pprof.enabled }}
-    # pprof
-    - name: {{ .Values.pprof.port.name }}
-      port: {{ .Values.pprof.port.hostPort }}
-      targetPort: {{ .Values.pprof.port.containerPort }}
     {{- end }}
   selector:
     {{- include "erigon.selectorLabels" . | nindent 4 }}

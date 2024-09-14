@@ -3,4 +3,6 @@ name: erigon
 description: A Helm chart for Ethereum Execution Engine for efficiency frontier, erigon.
 type: application
 version: 0.0.5
-appVersion: v1.10.26
+# https://github.com/testinprod-io/op-erigon
+# https://hub.docker.com/r/testinprod/op-erigon/tags
+appVersion: "2.60.5-0.7.1-amd64"

@@ -21,117 +21,77 @@ spec:
         command: [ "/bin/sh", "-c" ]
         args:
           - |
-            rm -rf {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}/LOCK  # remove lock
-            rm -rf {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}/nodekey  # remove nodekey
-            mkdir -p {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}
-            chown -R 1000:1000 {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}/
-            chmod -R g+w {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}/
+            rm -rf /data{{ .Values.datadir }}/LOCK  # remove lock
+            rm -rf /data{{ .Values.datadir }}/nodekey  # remove nodekey
+            mkdir -p /data{{ .Values.datadir }}
+            chown -R 1000:1000 /data{{ .Values.datadir }}/
+            chmod -R g+w /data{{ .Values.datadir }}/
         image: busybox
         imagePullPolicy: IfNotPresent
         volumeMounts:
-          - name: {{ .Values.persistence.name }}
-            mountPath: {{ .Values.persistence.mountDir }}
+          - name: data
+            mountPath: /data
 
       {{- if .Values.importTarURL }}
       - name: import-chain
         command: ["/bin/sh", "-c"]
         args:
           - |
-            if [ -f "{{ .Values.persistence.mountDir }}/imported" ]; then
+            if [ -f "/data/imported" ]; then
             echo "already imported"
-            ls {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}
+            ls /data{{ .Values.datadir }}
             else
             echo "Chain import start"
-            wget -O {{ .Values.persistence.mountDir }}/imported.tar {{ .Values.importTarURL }}  # download from URL
-            rm -rf {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}  # clean dir
-            mkdir -p {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}
-            chown -R 1000:1000 {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}/
-            chmod -R g+w {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}/
+            wget -O /data/imported.tar {{ .Values.importTarURL }}  # download from URL
+            rm -rf /data{{ .Values.datadir }}  # clean dir
+            mkdir -p /data{{ .Values.datadir }}
+            chown -R 1000:1000 /data{{ .Values.datadir }}/
+            chmod -R g+w /data{{ .Values.datadir }}/
             echo "extracting tar..."
-            tar -xf {{ .Values.persistence.mountDir }}/imported.tar -C {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}/
-            rm -rf {{ .Values.persistence.mountDir }}/imported.tar
-            touch {{ .Values.persistence.mountDir }}/imported
-            ls {{ .Values.persistence.mountDir }}{{ .Values.dataPath }}
+            tar -xf /data/imported.tar -C /data{{ .Values.datadir }}/
+            rm -rf /data/imported.tar
+            touch /data/imported
+            ls /data{{ .Values.datadir }}
             echo "Chain import finished"
             fi
         image: busybox
         imagePullPolicy: IfNotPresent
         volumeMounts:
-        - name: {{ .Values.persistence.name }}
-          mountPath: {{ .Values.persistence.mountDir }}
+        - name: data
+          mountPath: /data
       {{- end }}
       containers:
         - name: {{ template "erigon.fullname" . }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            {{- if .Values.rpc.http.enabled }}
-            # HTTP RPC
-            - name: {{ .Values.rpc.http.port.name }}
-              containerPort: {{ .Values.rpc.http.port.containerPort }}
+            {{- range $key, $value := .Values.erigon.ports }}
+            {{- if or $value.enabled (eq $key "authrpc") }}
+            - name: {{ $key }}
+              containerPort: {{ $value.port }}
             {{- end }}
-            {{- if .Values.authrpc.enabled }}
-            # AuthRPC
-            - name: {{ .Values.authrpc.port.name }}
-              containerPort: {{ .Values.authrpc.port.containerPort }}
-            {{- end }}
-            {{- if .Values.metrics.enabled }}
-            # Metrics
-            - name: {{ .Values.metrics.port.name }}
-              containerPort: {{ .Values.metrics.port.containerPort }}
-            {{- end }}
-            {{- if .Values.pprof.enabled }}
-            # pprof
-            - name: {{ .Values.pprof.port.name }}
-              containerPort: {{ .Values.pprof.port.containerPort }}
             {{- end }}
           command: ["erigon"]
           args:
-            - --maxpeers={{ .Values.maxPeers }}
-            - --datadir={{ .Values.persistence.mountDir }}{{ .Values.dataPath }}
+            # Basic erigon configs
+            - --chain={{ .Values.erigon.chain }}
+            - --datadir={{ .Values.erigon.datadir }}
+            - --txpool.gossip.disable={{ .Values.erigon.txpool.gossip.disable }}
+            - --rollup.sequencerhttp={{ .Values.erigon.rollup.sequencerhttp }}
+            # jwt
+            - --authrpc.jwtsecret=/jwt/{{ .Values.erigon.jwt.existingSecret.key | default "jwtSecret" }}
 
-            {{- if .Values.rpc.http.enabled }}
-            # HTTP RPC
-            - --http
-            - --http.api={{.Values.rpc.http.api}}
-            - --http.addr={{ .Values.rpc.http.addr }}
-            - --http.port={{ .Values.rpc.http.port.containerPort }}
-            - --http.corsdomain={{ .Values.rpc.http.corsDomain }}
+            # Loop through erigon.ports values to set configs
+            {{- range $key, $value := .Values.erigon.ports }}
+            {{- if or $value.enabled (eq $key "authrpc") }}
+            {{- range $config, $configValue := $value }}
+            {{- if eq $config "enabled" }}
+            - --{{ $key }}
+            {{- else }}
+            - --{{ $key }}.{{ $config }}={{ $configValue }}
             {{- end }}
-
-            {{- if .Values.rpc.ws.enabled }}
-            # WS RPC
-            - --ws
             {{- end }}
-
-            {{- if .Values.networkID }}
-            # network settings
-            - --networkid={{ .Values.networkID }}
             {{- end }}
-            {{- if and .Values.predefinedNetwork (ne .Values.predefinedNetwork "optimism-goerli ")}}
-            - --chain={{ .Values.predefinedNetwork }}
-            {{- end }}
-
-            {{- if .Values.authrpc.enabled }}
-            # Auth RPC
-            - --authrpc.addr={{ .Values.authrpc.addr }}
-            - --authrpc.port={{ .Values.authrpc.port.containerPort }}
-            - --authrpc.vhosts={{.Values.authrpc.vhosts}}
-            - --authrpc.jwtsecret={{ .Values.secretForVolumeMountDir }}/{{.Values.authrpc.jwtSecret.filename}}
-            {{- end }}
-
-            {{- if .Values.pprof.enabled }}
-            # pprof
-            - --pprof
-            - --pprof.addr={{ .Values.pprof.addr }}
-            - --pprof.port={{ .Values.pprof.port.containerPort }}
-            {{- end }}
-
-            {{- if .Values.metrics.enabled }}
-            # metrics
-            - --metrics
-            - --metrics.addr={{ .Values.metrics.addr }}
-            - --metrics.port={{ .Values.metrics.port.containerPort }}
             {{- end }}
 
             {{- with .Values.args }}
@@ -154,16 +114,16 @@ spec:
               port: {{ .Values.rpc.http.port.name }}
           {{- end }}
           volumeMounts:
-          - name: {{ .Values.persistence.name }}
-            mountPath: {{ .Values.persistence.mountDir }}
-          - mountPath: {{ .Values.secretForVolumeMountDir }} # mounts all files in the Secrets.
-            name: {{ include "erigon.secretname" . }}
+          - name: data
+            mountPath: /data
+          - name: jwt
+            mountPath: /jwt
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: {{ include "erigon.secretname" . }}
+        - name: jwt
           secret:
-            secretName: {{ include "erigon.secretname" . }}
+            secretName: {{ .Values.erigon.jwt.existingSecret.name | default "jwt-secret" }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -178,14 +138,10 @@ spec:
       {{- end }}
   volumeClaimTemplates:
   - metadata:
-      name: {{ .Values.persistence.name }}
+      name: data
       annotations:
         "helm.sh/resource-policy": keep
       labels:
-        {{- include "erigon.selectorLabels" . | nindent 8 }}
+        {{- include "erigon.selectorLabels" $ | nindent 8 }}
     spec:
-      accessModes:
-      - "ReadWriteOnce"
-      resources:
-        requests:
-          storage: {{ .Values.persistence.size }}
+      {{- toYaml .Values.volumeClaimSpec | nindent 8 }}

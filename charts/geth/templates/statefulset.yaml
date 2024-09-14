@@ -68,7 +68,10 @@ spec:
             - --op-network={{ .Values.geth.network }}
             - --datadir={{ .Values.geth.datadir }}
             - --syncmode={{ .Values.geth.syncmode }}
+            - --rollup.disabletxpoolgossip={{ .Values.geth.rollup.disabletxpoolgossip }}
             - --rollup.sequencerhttp={{ .Values.geth.rollup.sequencerhttp }}
+            # jwt
+            - --authrpc.jwtsecret=/jwt/{{ .Values.geth.jwt.existingSecret.key | default "jwtSecret" }}
 
             # Loop through geth.ports values to set configs
             {{- range $key, $value := .Values.geth.ports }}

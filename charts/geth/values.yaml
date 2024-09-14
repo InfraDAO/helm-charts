@@ -64,6 +64,7 @@ geth:
   network: op-mainnet
   datadir: /data
   syncmode: snap
+  rollup.disabletxpoolgossip: true
   rollup.sequencerhttp: https://mainnet-sequencer.optimism.io/
   # JWT for clients to authenticate with the authrpc. Specify either `existingSecret` OR `fromLiteral`.
   jwt:
