@@ -51,3 +51,13 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 release: {{ .Release.Name }}
 {{- end }}
 
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "geth.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (printf "%s-%s" (include "geth.fullname" .) .Release.Namespace) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}

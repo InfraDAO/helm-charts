@@ -73,15 +73,15 @@ spec:
             {{- end }}
           command: ["erigon"]
           args:
-            # Basic erigon configs
-            - --chain={{ .Values.erigon.chain }}
-            - --datadir={{ .Values.erigon.datadir }}
-            - --txpool.gossip.disable={{ .Values.erigon.txpool.gossip.disable }}
-            - --rollup.sequencerhttp={{ .Values.erigon.rollup.sequencerhttp }}
             # jwt
             - --authrpc.jwtsecret=/jwt/{{ .Values.erigon.jwt.existingSecret.key | default "jwtSecret" }}
 
-            # Loop through erigon.ports values to set configs
+            # Basic args
+            {{- range $key, $value := .Values.erigon.args }}
+            - --{{ $key }}={{ $value }}
+            {{- end }}
+
+            # Ports configs
             {{- range $key, $value := .Values.erigon.ports }}
             {{- if or $value.enabled (eq $key "authrpc") }}
             {{- range $config, $configValue := $value }}

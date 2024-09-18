@@ -1,0 +1,1 @@
+Put grafana dashboards as JSON files.

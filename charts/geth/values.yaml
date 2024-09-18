@@ -44,13 +44,15 @@ rbac:
       - "list"
       - "watch"
 
-#TODO: clean out if smon available
-prometheus:
-  pushGateway:
-    # Enable pushing metrics into Prometheus via PushGateway
-    enabled: false
-    # URL to your Prometheus PushGateway server
-    pushGatewayUrl: null
+# Enable to scrape the metrics endpoint. [prometheus-operator](https://github.com/prometheus-operator/prometheus-operator)
+serviceMonitor:
+  enabled: false
+  #TODO: check for proper path
+  path: /metrics
+  labels: {}
+  interval:
+  scrapeTimeout:
+  relabelings: []
 
 grafana:
   # Enable creation of Grafana dashboards. [Grafana chart](https://github.com/grafana/helm-charts/tree/main/charts/grafana#grafana-helm-chart) must be configured to search this namespace, see `sidecar.dashboards.searchNamespace`
@@ -61,11 +63,6 @@ grafana:
   dashboardsConfigMapLabelValue: "1"
 
 geth:
-  network: op-mainnet
-  datadir: /data
-  syncmode: snap
-  rollup.disabletxpoolgossip: true
-  rollup.sequencerhttp: https://mainnet-sequencer.optimism.io/
   # JWT for clients to authenticate with the authrpc. Specify either `existingSecret` OR `fromLiteral`.
   jwt:
     # Load the JWT from an existing Kubernetes Secret. Takes precedence over `fromLiteral` if set.
@@ -76,6 +73,16 @@ geth:
       key: null
     # Use this literal value for the JWT
     fromLiteral: null
+
+  # Basic arguments
+  args:
+    op-network: op-mainnet 
+    datadir: /data
+    syncmode: snap
+    rollup.disabletxpoolgossip: true
+    rollup.sequencerhttp: https://mainnet-sequencer.optimism.io/
+  
+  # Port configurations
   ports:
     # authrpc is required
     authrpc:
@@ -102,9 +109,9 @@ geth:
       addr: 0.0.0.0
       port: 6060
 
-# Additional CLI arguments
-extraArgs: []
-  # - --verbosity=3
+  # Additional CLI arguments
+  extraArgs: []
+    # - --verbosity=3
 
 # Extra labels to attach to the Pod for matching against
 extraLabels: {}
@@ -114,7 +121,7 @@ volumeClaimSpec:
   accessModes: 
     - "ReadWriteOnce"
   # The storage class to use when provisioning a persistent volume, will use your default storage class if not specified
-  storageClassName:
+  # storageClassName:
   resources:
     requests:
       # The amount of disk space to provision

@@ -64,16 +64,15 @@ spec:
             {{- end }}
           command: ["/usr/local/bin/geth"]
           args:
-            # Basic geth configs
-            - --op-network={{ .Values.geth.network }}
-            - --datadir={{ .Values.geth.datadir }}
-            - --syncmode={{ .Values.geth.syncmode }}
-            - --rollup.disabletxpoolgossip={{ .Values.geth.rollup.disabletxpoolgossip }}
-            - --rollup.sequencerhttp={{ .Values.geth.rollup.sequencerhttp }}
             # jwt
             - --authrpc.jwtsecret=/jwt/{{ .Values.geth.jwt.existingSecret.key | default "jwtSecret" }}
 
-            # Loop through geth.ports values to set configs
+            # Basic args
+            {{- range $key, $value := .Values.geth.args }}
+            - --{{ $key }}={{ $value }}
+            {{- end }}
+
+            # Ports configs
             {{- range $key, $value := .Values.geth.ports }}
             {{- if or $value.enabled (eq $key "authrpc") }}
             {{- range $config, $configValue := $value }}
