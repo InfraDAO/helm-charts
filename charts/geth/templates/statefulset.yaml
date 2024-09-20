@@ -62,6 +62,12 @@ spec:
               containerPort: {{ $value.port }}
             {{- end }}
             {{- end }}
+            - name: tcp-p2p
+              containerPort: {{ .Values.geth.ports.p2p.portTCP }}
+              protocol: TCP
+            - name: udp-p2p
+              containerPort: {{ .Values.geth.ports.p2p.portUDP }}
+              protocol: UDP
           command: ["/usr/local/bin/geth"]
           args:
             # jwt
@@ -84,6 +90,8 @@ spec:
             {{- end }}
             {{- end }}
             {{- end }}
+            - --port={{ .Values.geth.ports.p2p.portTCP }}
+            - --discovery.port={{ .Values.geth.ports.p2p.portUDP }}
 
             {{- if .Values.importTarURL }}
             # GC archive mode is required when we import the chain. Otherwise, imported data will be removed.

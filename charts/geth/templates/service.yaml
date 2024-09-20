@@ -14,5 +14,18 @@ spec:
       targetPort: {{ $value.port }}
     {{- end }}
     {{- end }}
+    - name: tcp-p2p
+      port: {{ .Values.geth.ports.p2p.portTCP }}
+      targetPort: tcp-p2p
+      {{- if and (ne .Values.service.type "ClusterIP") .Values.service.p2pNodePortTCP }}
+      nodePort: {{ .Values.service.p2pNodePortTCP }}
+      {{- end }}
+    - name: udp-p2p
+      port: {{ .Values.geth.ports.p2p.portUDP }}
+      targetPort: udp-p2p
+      {{- if and (ne .Values.service.type "ClusterIP") .Values.service.p2pNodePortUDP }}
+      nodePort: {{ .Values.service.p2pNodePortUDP }}
+      {{- end }}
+
   selector:
     {{- include "geth.selectorLabels" . | nindent 4 }}

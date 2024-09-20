@@ -16,108 +16,68 @@ spec:
         {{- include "op-node.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-        - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        - name: {{ template "op-node.fullname" . }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - name: {{ .Values.rpc.port.name }}
-              containerPort: {{ .Values.rpc.port.containerPort }}
-            {{- if .Values.p2p.enabled }}
-            - name: {{ .Values.p2p.listen.tcp.name }}
-              containerPort: {{ .Values.p2p.listen.tcp.containerPort }}
+            {{- range $key, $value := .Values.op.ports }}
+            {{- if or $value.enabled (eq $key "rpc") }}
+            - name: {{ $key }}
+              containerPort: {{ $value.port }}
+            {{- end }}
+            {{- end }}
+            - name: tcp-p2p
+              containerPort: {{ index .Values.op.ports.p2p "listen.tcp" }}
               protocol: TCP
-            - name: {{ .Values.p2p.listen.udp.name }}
-              containerPort: {{ .Values.p2p.listen.udp.containerPort }}
+            - name: udp-p2p
+              containerPort: {{ index .Values.op.ports.p2p "listen.udp" }}
               protocol: UDP
-            {{- end }}
-            {{- if .Values.metrics.enabled }}
-            - name: metrics-port
-              containerPort: {{ .Values.metrics.port.containerPort }}
-            {{- end }}
-            {{- if .Values.pprof.enabled }}
-            - name: pprof-port
-              containerPort: {{ .Values.pprof.port.containerPort }}
-            {{- end }}
           command:
             - op-node
           args:
-            - --network={{ .Values.network }}
-            - --l1={{ .Values.l1.rpcAddr }}
-            - --l1.beacon={{ .Values.l1.beacon }}
-            - --l2={{ required "L2 Execution Engine Address is required." .Values.l2.rpcAddr }}
-            - --l2.jwt-secret={{.Values.secretForVolumeMountDir}}/{{ required "A JWT secret key that has an admin access to L2 Execution Engine is required." .Values.l2.jwtSecret.key }}
-            - --rpc.addr={{ .Values.rpc.addr }}
-            - --rpc.port={{ .Values.rpc.port.containerPort }}
-            - --rpc.enable-admin={{ .Values.rpc.enableAdmin }}
+            # jwt
+            - --l2.jwt-secret=/jwt/{{ .Values.op.jwt.existingSecret.key | default "jwtSecret" }}
 
-            - --snapshotlog.file={{ .Values.snapshotLogPath }}
-
-            {{- if .Values.rollupConfig.file }}
-            # rollup config
-            - --rollup.config={{.Values.secretForVolumeMountDir}}/{{ .Values.rollupConfig.filename }}
+            # Basic args
+            {{- range $key, $value := .Values.op.args }}
+            - --{{ $key }}={{ $value }}
             {{- end }}
 
-            {{- if .Values.sequencer.enabled }}
-            # sequencer
-            - --sequencer.enabled=true
-            - --p2p.sequencer.key={{ .Values.sequencer.p2pKey }}
-            {{- end }}
-
-            {{- if .Values.p2p.enabled }}
-            # p2p
-            - --p2p.disable=false
-            - --p2p.listen.ip={{ .Values.p2p.listen.ip }}
-            - --p2p.listen.tcp={{ .Values.p2p.listen.tcp.containerPort }}
-            - --p2p.listen.udp={{ .Values.p2p.listen.udp.containerPort }}
-            {{- if .Values.p2p.priv.file }}
-            - --p2p.priv.path={{ .Values.secretForVolumeMountDir }}/{{ .Values.p2p.priv.filename }}
+            # Ports configs
+            {{- range $key, $value := .Values.op.ports }}
+            {{- if or $value.enabled (or (eq $key "rpc") (eq $key "p2p")) }}
+            {{- range $config, $configValue := $value }}
+            - --{{ $key }}.{{ $config }}={{ $configValue }}
             {{- end }}
             {{- end }}
-
-            {{- if .Values.metrics.enabled }}
-            # metrics
-            - --metrics.enabled=true
-            - --metrics.addr={{ .Values.metrics.addr }}
-            - --metrics.port={{ .Values.metrics.port.containerPort }}
             {{- end }}
-
-            # pprof
-            - --pprof.enabled={{ .Values.pprof.enabled }}
-
 
             {{- with .Values.extraArgs }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
           volumeMounts:
-            # mounts all files in the Secrets.
-            - mountPath: {{ .Values.secretForVolumeMountDir }}
-              name: {{ include "op-node.secretname" . }}
-            - mountPath: {{ .Values.secretForVolumeMountDir }}
-              name: {{ .Values.l2.jwtSecret.secretName }}
+          - name: jwt
+            mountPath: /jwt
           {{- if .Values.livenessProbe }}
           livenessProbe:
             initialDelaySeconds: 15
             periodSeconds: 60
             tcpSocket:
-              port: {{ .Values.rpc.port.name }}
+              port: {{ .Values.op.rpc.port }}
           {{- end }}
           {{- if .Values.readinessProbe }}
           readinessProbe:
-            # TODO: replace it to real http request.
             initialDelaySeconds: 15
             periodSeconds: 60
             tcpSocket:
-              port: {{ .Values.rpc.port.name }}
+              port: {{ .Values.op.rpc.port }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: {{ include "op-node.secretname" . }}
+        - name: jwt
           secret:
-            secretName: {{ include "op-node.secretname" . }}
-        - name: {{ .Values.l2.jwtSecret.secretName }}
-          secret:
-            secretName: {{ .Values.l2.jwtSecret.secretName }}
+            secretName: {{ .Values.op.jwt.existingSecret.name | default "jwt-secret" }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

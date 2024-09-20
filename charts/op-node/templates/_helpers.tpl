@@ -57,3 +57,14 @@ app.kubernetes.io/name: {{ include "op-node.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "op-node.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (printf "%s-%s" (include "op-node.fullname" .) .Release.Namespace) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}

@@ -7,29 +7,25 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - name: {{ .Values.rpc.port.name }}
-      port: {{ .Values.rpc.port.hostPort }}
-      targetPort: {{ .Values.rpc.port.containerPort }}
-    {{- if .Values.p2p.enabled }}
-    - name: {{ .Values.p2p.listen.tcp.name }}
-      port: {{ .Values.p2p.listen.tcp.hostPort }}
-      targetPort: {{ .Values.p2p.listen.tcp.containerPort }}
-      protocol: TCP
-    - name: {{ .Values.p2p.listen.udp.name }}
-      port: {{ .Values.p2p.listen.udp.hostPort }}
-      protocol: UDP
-      targetPort: {{ .Values.p2p.listen.udp.containerPort }}
+    {{- range $key, $value := .Values.op.ports }}
+    {{- if or $value.enabled (eq $key "rpc") }}
+    - name: {{ $key }}
+      port: {{ $value.port }}
+      targetPort: {{ $value.port }}
     {{- end }}
-    {{- if .Values.metrics.enabled }}
-    - name: {{ .Values.metrics.port.name }}
-      port: {{ .Values.metrics.port.hostPort }}
-      targetPort: {{ .Values.metrics.port.containerPort }}
     {{- end }}
-    {{- if .Values.pprof.enabled }}
-    - name: {{ .Values.pprof.port.name }}
-      port: {{ .Values.pprof.port.hostPort }}
-      targetPort: {{ .Values.pprof.port.containerPort }}
-    {{- end }}
+    - name: tcp-p2p
+      port: {{ index .Values.op.ports.p2p "listen.tcp" }}
+      targetPort: tcp-p2p
+      {{- if and (ne .Values.service.type "ClusterIP") .Values.service.p2pNodePortTCP }}
+      nodePort: {{ .Values.service.p2pNodePortTCP }}
+      {{- end }}
+    - name: udp-p2p
+      port: {{ index .Values.op.ports.p2p "listen.udp" }}
+      targetPort: udp-p2p
+      {{- if and (ne .Values.service.type "ClusterIP") .Values.service.p2pNodePortUDP }}
+      nodePort: {{ .Values.service.p2pNodePortUDP }}
+      {{- end }}
 
   selector:
     {{- include "op-node.selectorLabels" . | nindent 4 }}

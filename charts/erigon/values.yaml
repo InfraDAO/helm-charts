@@ -94,7 +94,7 @@ erigon:
       addr: 0.0.0.0
       port: 8545
       vhosts: "*"
-      corsDomain: "*"
+      corsdomain: "*"
     ws:
       enabled: false
       port: 8546
@@ -109,7 +109,7 @@ erigon:
 
 # Additional CLI arguments
 extraArgs: []
-  # - --verbosity=3
+  # - --verbosity=info
 
 # Extra labels to attach to the Pod for matching against
 extraLabels: {}

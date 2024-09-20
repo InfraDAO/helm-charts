@@ -1,19 +1,181 @@
-# Default values are set for Optimism Goerli Testnet.
-
-replicaCount: 1
-
-image:
-  repository: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: 
-
 nameOverride: ""
 fullnameOverride: ""
 
-service:
-  type: LoadBalancer
+image:
+  # Image
+  repository: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node
+  # Overrides the image tag
+  # @default Chart.appVersion
+  tag: ""
+  pullPolicy: IfNotPresent
 
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+rbac:
+  # Specifies whether RBAC resources are to be created
+  create: true
+  # Required ClusterRole rules
+  # @default See `values.yaml`
+  clusterRules:
+     # Required to obtain the nodes external IP
+    - apiGroups: [""]
+      resources:
+      - "nodes"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+  # Required ClusterRole rules
+  # @default See `values.yaml`
+  rules:
+    # Required to get information about the serices nodePort.
+    - apiGroups: [""]
+      resources:
+      - "services"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+
+# Enable to scrape the metrics endpoint. [prometheus-operator](https://github.com/prometheus-op-nodeerator/prometheus-operator)
+serviceMonitor:
+  enabled: false
+  #TODO: check for proper path
+  path: /metrics
+  labels: {}
+  interval:
+  scrapeTimeout:
+  relabelings: []
+
+grafana:
+  # Enable creation of Grafana dashboards. [Grafana chart](https://github.com/grafana/helm-charts/tree/main/charts/grafana#grafana-helm-chart) must be configured to search this namespace, see `sidecar.dashboards.searchNamespace`
+  dashboards: false
+  # Must match `sidecar.dashboards.label` value for the [Grafana chart](https://github.com/grafana/helm-charts/tree/main/charts/grafana#grafana-helm-chart)
+  dashboardsConfigMapLabel: grafana_dashboard
+  # Must match `sidecar.dashboards.labelValue` value for the [Grafana chart](https://github.com/grafana/helm-charts/tree/main/charts/grafana#grafana-helm-chart)
+  dashboardsConfigMapLabelValue: "1"
+
+op:
+  # JWT for clients to authenticate with the authrpc. Specify either `existingSecret` OR `fromLiteral`.
+  # Will be used for the '--l2.jwt-secret' arg value
+  jwt:
+    # Load the JWT from an existing Kubernetes Secret. Takes precedence over `fromLiteral` if set.
+    existingSecret:
+      # Name of the Secret resource in the same namespace
+      name: null
+      # Data key for the JWT in the Secret
+      key: null
+    # Use this literal value for the JWT
+    fromLiteral: null
+
+  # Basic arguments
+  args:
+    network: op-mainnet
+    l1: # ethereum mainnet RPC url
+    l1.beacon: # http endpoint address of L1 Beacon-node
+    l1.trustrpc: true
+    l2: # op-geth authenticated RPC url
+    l2.enginekind: geth # Valid options: geth, reth, erigon
+    syncmode: execution-layer
+  
+  # Port configurations
+  ports:
+    # rpc is required
+    rpc:
+      addr: 0.0.0.0
+      port: 8551
+    metrics:
+      enabled: false
+      addr: 0.0.0.0
+      port: 7300
+    pprof:
+      enabled: false
+      addr: 0.0.0.0
+      port: 6060
+    p2p:
+      disable: false
+      listen.tcp: 3030
+      listen.udp: 3031
+      # priv.path: # Useful to persist data in case the pod crashes
+
+
+
+  # Additional CLI arguments
+  extraArgs: []
+    # - --log.level=info
+
+
+# Extra labels to attach to the Pod for matching against
+extraLabels: {}
+
+# [PersistentVolumeClaimSpec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#persistentvolumeclaimspec-v1-core) for storage
+volumeClaimSpec:
+  accessModes: 
+    - "ReadWriteOnce"
+  # The storage class to use when provisioning a persistent volume, will use your default storage class if not specified
+  # storageClassName:
+  resources:
+    requests:
+      # The amount of disk space to provision
+      storage: 200Gi
+
+#TODO: check if necessary
+restoreSnapshot:
+  # Enable initialising Erigon state from a remote snapshot
+  enabled: false
+  # URL for snapshot to download and extract to restore state
+  snapshotUrl: ""
+  # One of `streaming` or `multipart`. `streaming` will perform a streaming download and extraction of the archive. This minimises disk space requirements to roughly equal to the size of the archive. `multipart` will perform a chunked multi-part download of the archive first, maximising download speed, and will then extract the archive. The disk requirements are roughly 2.1x the archive size.
+  mode: streaming
+  # [mode=multipart only] Number of archive parts to download concurrently
+  multipartConcurrency: 5
+  # Advanced. Nonce input used when checking existing restoration and whether to perform a new restoration. Change to force a new restoration with the existing configuration.
+  nonce: 1
+
+# Increasing the grace termination period prevents Kubernetes
+# from killing the node process prematurely. Premature shutdown
+# can lead to data integrity issues
+# Amount of time to wait before force-killing the container
+terminationGracePeriodSeconds: 60
+
+# Annotations for the `Pod`
+podAnnotations: {}
+
+#TODO: check if need to run as root
+# Pod-wide security context
+podSecurityContext:
+  runAsNonRoot: false # Sadly Nethermind's container needs to run as root
+  runAsUser: 0
+  runAsGroup: 0
+  fsGroup: 0
+
+service:
+  type: NodePort
+  # Service type must be NodePort or LoadBalancer for p2pNodePort configuration. Make sure the port is open on your node as well
+  p2pNodePortTCP: 30303
+  p2pNodePortUDP: 30304
+
+p2pNodePort:
+  # Expose P2P port via NodePort
+  enabled: false
+  # NodePort to be used. Must be unique.
+  port: 31000
+  initContainer:
+    image:
+      # Container image to fetch nodeport information
+      repository: lachlanevenson/k8s-kubectl
+      # Container tag
+      tag: v1.25.4
+      # Container pull policy
+      pullPolicy: IfNotPresent
+      
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -22,9 +184,11 @@ resources: {}
   # limits:
   #   cpu: 100m
   #   memory: 128Mi
+  #   ephemeral-storage: 100Mi
   # requests:
   #   cpu: 100m
   #   memory: 128Mi
+  #   ephemeral-storage: 100Mi
 
 nodeSelector: {}
 
@@ -32,79 +196,14 @@ tolerations: []
 
 affinity: {}
 
-livenessProbe: true
-readinessProbe: true
-
-#######################################
-# op-node settings as args
-#######################################
-network: op-mainnet
-
-l1:
-  rpcAddr: # place your eth mainnet execution client's RPC address including https:// or wss://"
-  beacon: # place your eth mainnet execution client's RPC address including https:// or wss://"
-
-l2:
-  rpcAddr: # place your execution client's RPC address including https:// or wss://
-  # best practice suggest to create your own secret and indicate only the secret name and key to avoid having it in plain text
-  # if you still want create the secret with the chart, mention the jwt in the value field
-  jwtSecret:
-    secretName: authrpc-jwt
-    key: jwt
-    # replace 'false' by your jwt to create the secret with your chart
-    value: false
-
-rpc:
-  port:
-    name: rpc-port
-    containerPort: 8545
-    hostPort: 7545
-  addr: 0.0.0.0
-  enableAdmin: false
-
-snapshotLogPath: /logs
-
-rollupConfig:
-  file:
-  filename: rollup.json
-
-sequencer:
-  enabled: false
-  p2pKey:
-
-p2p:
+#TODO: necessary?
+initChownData:
+  # Init container to set the correct permissions to access data directories
   enabled: true
-  listen:
-    ip: 0.0.0.0
-    tcp:
-      name: p2p-tcp-port
-      containerPort: 9003
-      hostPort: 9003
-    udp:
-      name: p2p-udp-port
-      containerPort: 9003
-      hostPort: 9003
-  priv:
-    file:
-    filename: p2ppriv.txt  # file path to store p2p.priv
-
-metrics:
-  enabled: true
-  addr: 0.0.0.0
-  port:
-    name: metrics-port
-    containerPort: 7300
-    hostPort: 7300
-
-pprof:
-  enabled: true
-  addr: 0.0.0.0
-  port:
-    name: pprof-port
-    containerPort: 6060
-    hostPort: 6060
-
-# rest application arguments
-extraArgs: []
-
-secretForVolumeMountDir: /secrets
+  image:
+    # Container repository
+    repository: busybox
+    # Container tag
+    tag: "1.36.1"
+    # Container pull policy
+    pullPolicy: IfNotPresent

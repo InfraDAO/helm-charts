@@ -1,30 +1,30 @@
-# OP Node
-OP Node is a consensus engine for OP Stack. This is a OP Node Helm Chart packaged by Test in Prod.
+# op-node Node
+op-node Node is a consensus engine for op-node Stack. This is a op-node Node Helm Chart packaged by Test in Prod.
 
 ## Introduction
-You can build a new OP Stack chain or connect to an existing one. You need an OP execution engine that works along with OP Node.
+You can build a new op-node Stack chain or connect to an existing one. You need an op-node execution engine that works along with op-node Node.
 
-Please refer to the example values for Optimism Goerli [here.](example-values/optimism-goerli.yaml)
+Please refer to the example values for op-nodetimism Goerli [here.](example-values/op-nodetimism-goerli.yaml)
 
 ## LFG
-`helm install op-node-release op-charts/op-node -f values.yaml`
+`helm install op-node-release op-node-charts/op-node -f values.yaml`
 
 ## Requirements
 1. K8s 1.8+
 2. Helm 3.2.0+
-3. OP Execution Engine with EngineAPI access.
-4. OP Vibe 🎶
+3. op-node Execution Engine with EngineAPI access.
+4. op-node Vibe 🎶
 
 ## Parameters
-**This chart connects to Optimism Goerli Testnet in default.** Please refer to the [op-node's flag code](https://github.com/ethereum-optimism/optimism/blob/bbebb76e073987e58d0b97adb718b6ce8164c1c7/op-node/flags/flags.go) for the detail!
+**This chart connects to op-nodetimism Goerli Testnet in default.** Please refer to the [op-node's flag code](https://github.com/ethereum-op-nodetimism/op-nodetimism/blob/bbebb76e073987e58d0b97adb718b6ce8164c1c7/op-node/flags/flags.go) for the detail!
 ### Required Parameters
 | Name           | Description                                                                | Value                               |
 |----------------|----------------------------------------------------------------------------|-------------------------------------|
-| `l2.rpcAddr`   | An OP execution engine address that this OP Node can change the state.     | `""`                                |
+| `l2.rpcAddr`   | An op-node execution engine address that this op-node Node can change the state.     | `""`                                |
 | `l2.jwtSecret` | jwtSecret key that has an admin permission to the execution engine client. | `""`                                |
 | `l1.rpcAddr`   | RPC address of your L2's L1.                                               | `"DSRV AllthatNode Goerli Network"` |
 
-### OP Node Parameters
+### op-node Node Parameters
 | Name                | Description                                                                                                      | Value    |
 |---------------------|------------------------------------------------------------------------------------------------------------------|----------|
 | `sequencer.enabled` | If this op-node will work as a sequencer or not.                                                                 | `false`  |
@@ -74,4 +74,4 @@ Please refer to the example values for Optimism Goerli [here.](example-values/op
 ## Kudos
 - This chart uses DSRV's AllThatNode Goerli public RPC. Shout out to DSRV, the most reliable blockchain infra provider :)
 - Kudos to Bitnami for providing decent template references.
-- Of course, thanks OP Labs and Optimism Foundation for building amazing collective and technology.
+- Of course, thanks op-node Labs and op-nodetimism Foundation for building amazing collective and technology.

@@ -1,8 +1,0 @@
-{{- if .Values.l2.jwtSecret.value }}
-apiVersion: v1
-kind: Secret
-metadata:
-  name: {{ .Values.l2.jwtSecret.secretName }}
-stringData:
-  {{ .Values.l2.jwtSecret.key }}: {{ .Values.l2.jwtSecret.value }}
-{{- end }}
