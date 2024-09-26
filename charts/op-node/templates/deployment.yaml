@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: deployment
 metadata:
   name: {{ include "op-node.fullname" . }}
   labels:
@@ -55,9 +55,6 @@ spec:
             {{- with .Values.extraArgs }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
-          volumeMounts:
-          - name: jwt
-            mountPath: /jwt
           {{- if .Values.livenessProbe }}
           livenessProbe:
             initialDelaySeconds: 15
@@ -74,6 +71,9 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - name: jwt
+            mountPath: /jwt
       volumes:
         - name: jwt
           secret:

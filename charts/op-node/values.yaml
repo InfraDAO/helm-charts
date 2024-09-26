@@ -47,7 +47,6 @@ rbac:
 # Enable to scrape the metrics endpoint. [prometheus-operator](https://github.com/prometheus-op-nodeerator/prometheus-operator)
 serviceMonitor:
   enabled: false
-  #TODO: check for proper path
   path: /metrics
   labels: {}
   interval:
@@ -83,7 +82,7 @@ op:
     l1.trustrpc: true
     l2: # op-geth authenticated RPC url
     l2.enginekind: geth # Valid options: geth, reth, erigon
-    syncmode: execution-layer
+    syncmode: execution-layer # For more info [https://docs.optimism.io/builders/node-operators/management/snap-sync]
   
   # Port configurations
   ports:
@@ -105,39 +104,12 @@ op:
       listen.udp: 3031
       # priv.path: # Useful to persist data in case the pod crashes
 
-
-
   # Additional CLI arguments
   extraArgs: []
     # - --log.level=info
 
-
 # Extra labels to attach to the Pod for matching against
 extraLabels: {}
-
-# [PersistentVolumeClaimSpec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#persistentvolumeclaimspec-v1-core) for storage
-volumeClaimSpec:
-  accessModes: 
-    - "ReadWriteOnce"
-  # The storage class to use when provisioning a persistent volume, will use your default storage class if not specified
-  # storageClassName:
-  resources:
-    requests:
-      # The amount of disk space to provision
-      storage: 200Gi
-
-#TODO: check if necessary
-restoreSnapshot:
-  # Enable initialising Erigon state from a remote snapshot
-  enabled: false
-  # URL for snapshot to download and extract to restore state
-  snapshotUrl: ""
-  # One of `streaming` or `multipart`. `streaming` will perform a streaming download and extraction of the archive. This minimises disk space requirements to roughly equal to the size of the archive. `multipart` will perform a chunked multi-part download of the archive first, maximising download speed, and will then extract the archive. The disk requirements are roughly 2.1x the archive size.
-  mode: streaming
-  # [mode=multipart only] Number of archive parts to download concurrently
-  multipartConcurrency: 5
-  # Advanced. Nonce input used when checking existing restoration and whether to perform a new restoration. Change to force a new restoration with the existing configuration.
-  nonce: 1
 
 # Increasing the grace termination period prevents Kubernetes
 # from killing the node process prematurely. Premature shutdown
@@ -162,20 +134,6 @@ service:
   p2pNodePortTCP: 30303
   p2pNodePortUDP: 30304
 
-p2pNodePort:
-  # Expose P2P port via NodePort
-  enabled: false
-  # NodePort to be used. Must be unique.
-  port: 31000
-  initContainer:
-    image:
-      # Container image to fetch nodeport information
-      repository: lachlanevenson/k8s-kubectl
-      # Container tag
-      tag: v1.25.4
-      # Container pull policy
-      pullPolicy: IfNotPresent
-      
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -195,15 +153,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-#TODO: necessary?
-initChownData:
-  # Init container to set the correct permissions to access data directories
-  enabled: true
-  image:
-    # Container repository
-    repository: busybox
-    # Container tag
-    tag: "1.36.1"
-    # Container pull policy
-    pullPolicy: IfNotPresent
