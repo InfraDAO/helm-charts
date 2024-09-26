@@ -14,51 +14,39 @@ spec:
       labels:
         {{- include "erigon.selectorLabels" . | nindent 8 }}
     spec:
-      securityContext:
-        fsGroup: 1000
+      {{- if .Values.restoreSnapshot.enabled }}
       initContainers:
-      - name: preprocess
-        command: [ "/bin/sh", "-c" ]
-        args:
-          - |
-            rm -rf /data{{ .Values.datadir }}/LOCK  # remove lock
-            rm -rf /data{{ .Values.datadir }}/nodekey  # remove nodekey
-            mkdir -p /data{{ .Values.datadir }}
-            chown -R 1000:1000 /data{{ .Values.datadir }}/
-            chmod -R g+w /data{{ .Values.datadir }}/
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        volumeMounts:
-          - name: data
-            mountPath: /data
+        - name: snapshot
+          image: busybox:stable
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -x
+              STORAGE_PATH={{ .Values.erigon.args.datadir }}
+              RESTORE_PATH={{ .Values.erigon.args.datadir }}/chaindata
+              SNAPSHOT_URL={{ .Values.restoreSnapshot.snapshotUrl }}
 
-      {{- if .Values.importTarURL }}
-      - name: import-chain
-        command: ["/bin/sh", "-c"]
-        args:
-          - |
-            if [ -f "/data/imported" ]; then
-            echo "already imported"
-            ls /data{{ .Values.datadir }}
-            else
-            echo "Chain import start"
-            wget -O /data/imported.tar {{ .Values.importTarURL }}  # download from URL
-            rm -rf /data{{ .Values.datadir }}  # clean dir
-            mkdir -p /data{{ .Values.datadir }}
-            chown -R 1000:1000 /data{{ .Values.datadir }}/
-            chmod -R g+w /data{{ .Values.datadir }}/
-            echo "extracting tar..."
-            tar -xf /data/imported.tar -C /data{{ .Values.datadir }}/
-            rm -rf /data/imported.tar
-            touch /data/imported
-            ls /data{{ .Values.datadir }}
-            echo "Chain import finished"
-            fi
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        volumeMounts:
-        - name: data
-          mountPath: /data
+              # If enabled and snapshot URL has been provided, restore snapshot
+              if [ $SNAPSHOT_URL != "" ]; then
+                echo "Snapshot restoration enabled"
+                if [ ! -f "$STORAGE_PATH/from_snapshot" ] || [ "$(cat $STORAGE_PATH/from_snapshot)" != "${SNAPSHOT_URL}" ]; then
+                  echo "Clearing existing chaindata..."
+                  rm -rf "$RESTORE_PATH"
+                  echo "Downloading and extracting $SNAPSHOT_URL..."
+                  mkdir -p "$RESTORE_PATH"
+                  wget -c "${SNAPSHOT_URL}" -O - | tar -xz -C "$RESTORE_PATH"
+                  [ "$?" != "0" ] && echo "Streaming download failed" && exit 1
+                  echo "${SNAPSHOT_URL}" > ${STORAGE_PATH}/from_snapshot
+                else
+                  echo "Snapshot configuration already restored, continuing..."
+                fi
+              else
+                echo "Snapshot url missing, skipping..."
+              fi
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.erigon.args.datadir }}
       {{- end }}
       containers:
         - name: {{ template "erigon.fullname" . }}
@@ -71,6 +59,12 @@ spec:
               containerPort: {{ $value.port }}
             {{- end }}
             {{- end }}
+            - name: tcp-p2p
+              containerPort: {{ .Values.erigon.ports.p2p.portTCP }}
+              protocol: TCP
+            - name: udp-p2p
+              containerPort: {{ .Values.erigon.ports.p2p.portUDP }}
+              protocol: UDP
           command: ["erigon"]
           args:
             # jwt
@@ -93,6 +87,7 @@ spec:
             {{- end }}
             {{- end }}
             {{- end }}
+            - --p2p.allowed-ports={{ .Values.erigon.ports.p2p.portTCP }},{{ .Values.erigon.ports.p2p.portUDP }}
 
             {{- with .Values.args }}
             # Other Arguments
@@ -115,7 +110,7 @@ spec:
           {{- end }}
           volumeMounts:
           - name: data
-            mountPath: /data
+            mountPath: {{ .Values.erigon.args.datadir }}
           - name: jwt
             mountPath: /jwt
           resources:

@@ -127,20 +127,13 @@ volumeClaimSpec:
   resources:
     requests:
       # The amount of disk space to provision
-      storage: 200Gi
+      storage: 400Gi
 
-#TODO: check if necessary
 restoreSnapshot:
-  # Enable initialising Erigon state from a remote snapshot
+  # Enable initialising state from a remote snapshot
   enabled: false
   # URL for snapshot to download and extract to restore state
   snapshotUrl: ""
-  # One of `streaming` or `multipart`. `streaming` will perform a streaming download and extraction of the archive. This minimises disk space requirements to roughly equal to the size of the archive. `multipart` will perform a chunked multi-part download of the archive first, maximising download speed, and will then extract the archive. The disk requirements are roughly 2.1x the archive size.
-  mode: streaming
-  # [mode=multipart only] Number of archive parts to download concurrently
-  multipartConcurrency: 5
-  # Advanced. Nonce input used when checking existing restoration and whether to perform a new restoration. Change to force a new restoration with the existing configuration.
-  nonce: 1
 
 # Increasing the grace termination period prevents Kubernetes
 # from killing the node process prematurely. Premature shutdown
@@ -185,29 +178,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-p2pNodePort:
-  # Expose P2P port via NodePort
-  enabled: false
-  # NodePort to be used. Must be unique.
-  port: 31000
-  initContainer:
-    image:
-      # Container image to fetch nodeport information
-      repository: lachlanevenson/k8s-kubectl
-      # Container tag
-      tag: v1.25.4
-      # Container pull policy
-      pullPolicy: IfNotPresent
-
-#TODO: necessary?
-initChownData:
-  # Init container to set the correct permissions to access data directories
-  enabled: true
-  image:
-    # Container repository
-    repository: busybox
-    # Container tag
-    tag: "1.36.1"
-    # Container pull policy
-    pullPolicy: IfNotPresent

@@ -26,6 +26,5 @@ spec:
       {{- if and (ne .Values.service.type "ClusterIP") .Values.service.p2pNodePortUDP }}
       nodePort: {{ .Values.service.p2pNodePortUDP }}
       {{- end }}
-
   selector:
     {{- include "geth.selectorLabels" . | nindent 4 }}
