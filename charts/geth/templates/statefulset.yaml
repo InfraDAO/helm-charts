@@ -17,7 +17,7 @@ spec:
       {{- if .Values.restoreSnapshot.enabled }}
       initContainers:
         - name: snapshot
-          image: busybox:stable
+          image: danysk/zstd:1.5.6
           imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c"]
           args:
@@ -35,9 +35,25 @@ spec:
                   rm -rf "$RESTORE_PATH"
                   echo "Downloading and extracting $SNAPSHOT_URL..."
                   mkdir -p "$RESTORE_PATH"
-                  wget -c "${SNAPSHOT_URL}" -O - | tar -xz -C "$RESTORE_PATH"
+
+                  # Decompress based on file extension
+                  if [[ "$SNAPSHOT_URL" == *.tar.zst ]]; then
+                      echo "*.tar.zst file detected..."
+                      wget -c "$SNAPSHOT_URL" -O - | zstd -d | tar -x -C "$RESTORE_PATH"
+                  elif [[ "$SNAPSHOT_URL" == *.zst ]]; then
+                      echo "*.zst file detected..."
+                      wget -c "$SNAPSHOT_URL" -O - | zstd -d -rm -o "$RESTORE_PATH"
+                  elif [[ "$SNAPSHOT_URL" == *.tar ]]; then
+                      echo "*.tar file detected..."
+                      wget -c "$SNAPSHOT_URL" -O - | tar -xz -C "$RESTORE_PATH"
+                  else
+                      echo "Unrecognised file format downloaded. Only .tar, .zst and .tar.zst supported."
+                      exit 1
+                  fi
+
                   [ "$?" != "0" ] && echo "Streaming download failed" && exit 1
                   echo "${SNAPSHOT_URL}" > ${STORAGE_PATH}/from_snapshot
+                  echo "Snapshot finished!"
                 else
                   echo "Snapshot configuration already restored, continuing..."
                 fi
