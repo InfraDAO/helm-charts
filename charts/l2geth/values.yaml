@@ -2,8 +2,8 @@ nameOverride: ""
 fullnameOverride: ""
 
 image:
-  # Image for geth
-  repository: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-geth
+  # Image for l2geth
+  repository: ethereumoptimism/l2geth
   # Overrides the image tag
   # @default Chart.appVersion
   tag: ""
@@ -61,7 +61,7 @@ grafana:
   # Must match `sidecar.dashboards.labelValue` value for the [Grafana chart](https://github.com/grafana/helm-charts/tree/main/charts/grafana#grafana-helm-chart)
   dashboardsConfigMapLabelValue: "1"
 
-geth:
+l2geth:
   # JWT for clients to authenticate with the authrpc. Specify either `existingSecret` OR `fromLiteral`.
   jwt:
     # Load the JWT from an existing Kubernetes Secret. Takes precedence over `fromLiteral` if set.
@@ -75,13 +75,18 @@ geth:
 
   # Basic arguments
   args:
-    op-network: op-mainnet 
     datadir: /data
-    syncmode: snap
-    rollup.disabletxpoolgossip: true
-    rollup.sequencerhttp: https://mainnet-sequencer.optimism.io/
-    # rollup.historicalrpc: http://l2geth_rpc:1234 # Required argument to connect to l2geth for historical data and eth_call [https://docs.optimism.io/builders/node-operators/configuration/base-config#legacy-geth]
-  
+
+  env:
+    USING_OVM: true
+    ETH1_SYNC_SERVICE_ENABLE: false
+    RPC_ENABLE: true
+    RPC_ADDR: 0.0.0.0
+    RPC_PORT: 8544
+    RPC_API: "eth,rollup,net,web3,debug"
+    RPC_CORS_DOMAIN: "*"
+    RPC_VHOSTS: "*"
+
   # Port configurations
   ports:
     # authrpc is required
@@ -90,7 +95,7 @@ geth:
       port: 8551
       vhosts: "*"
     http:
-      enabled: true
+      enabled: false
       port: 8545
       addr: 0.0.0.0
       vhosts: "*"
@@ -154,7 +159,7 @@ podSecurityContext:
   fsGroup: 0
 
 service:
-  type: NodePort
+  type: ClusterIP
   # Service type must be NodePort or LoadBalancer for p2pNodePort configuration. Make sure the port is open on your node as well
   p2pNodePortTCP: 30300
   p2pNodePortUDP: 30301

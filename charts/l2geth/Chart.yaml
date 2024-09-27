@@ -1,0 +1,6 @@
+apiVersion: v2
+name: l2geth
+description: A Helm chart for Legacy Geth, l2geth.
+type: application
+version: 0.0.1
+appVersion: "0.5.31"

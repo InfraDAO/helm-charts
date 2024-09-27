@@ -1,0 +1,160 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "l2geth.fullname" . }}
+  labels:
+    {{- include "l2geth.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "l2geth.fullname" . }}
+  selector:
+    matchLabels:
+      {{- include "l2geth.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "l2geth.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if .Values.restoreSnapshot.enabled }}
+      initContainers:
+        - name: snapshot
+          image: busybox:stable
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -x
+              STORAGE_PATH={{ .Values.l2geth.args.datadir }}
+              RESTORE_PATH={{ .Values.l2geth.args.datadir }}/l2geth/chaindata
+              SNAPSHOT_URL={{ .Values.restoreSnapshot.snapshotUrl }}
+
+              # If enabled and snapshot URL has been provided, restore snapshot
+              if [ $SNAPSHOT_URL != "" ]; then
+                echo "Snapshot restoration enabled"
+                if [ ! -f "$STORAGE_PATH/from_snapshot" ] || [ "$(cat $STORAGE_PATH/from_snapshot)" != "${SNAPSHOT_URL}" ]; then
+                  echo "Clearing existing chaindata..."
+                  rm -rf "$RESTORE_PATH"
+                  echo "Downloading and extracting $SNAPSHOT_URL..."
+                  mkdir -p "$RESTORE_PATH"
+                  wget -c "${SNAPSHOT_URL}" -O - | tar -xz -C "$RESTORE_PATH"
+                  [ "$?" != "0" ] && echo "Streaming download failed" && exit 1
+                  echo "${SNAPSHOT_URL}" > ${STORAGE_PATH}/from_snapshot
+                else
+                  echo "Snapshot configuration already restored, continuing..."
+                fi
+              else
+                echo "Snapshot url missing, skipping..."
+              fi
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.l2geth.args.datadir }}
+      {{- end }}
+      containers:
+        - name: {{ template "l2geth.fullname" . }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            {{- range $key, $value := .Values.l2geth.ports }}
+            {{- if or $value.enabled (eq $key "authrpc") }}
+            - name: {{ $key }}
+              containerPort: {{ $value.port }}
+            {{- end }}
+            {{- end }}
+            - name: rpc
+              containerPort: {{ .Values.l2geth.env.RPC_PORT }}
+            - name: tcp-p2p
+              containerPort: {{ .Values.l2geth.ports.p2p.portTCP }}
+              protocol: TCP
+            - name: udp-p2p
+              containerPort: {{ .Values.l2geth.ports.p2p.portUDP }}
+              protocol: UDP
+          command: ["/usr/local/bin/geth"]
+          args:
+            # jwt
+            - --authrpc.jwtsecret=/jwt/{{ .Values.l2geth.jwt.existingSecret.key | default "jwtSecret" }}
+
+            # Basic args
+            {{- range $key, $value := .Values.l2geth.args }}
+            - --{{ $key }}={{ $value }}
+            {{- end }}
+
+            # Ports configs
+            {{- range $key, $value := .Values.l2geth.ports }}
+            {{- if or $value.enabled (eq $key "authrpc") }}
+            {{- range $config, $configValue := $value }}
+            {{- if eq $config "enabled" }}
+            - --{{ $key }}
+            {{- else }}
+            - --{{ $key }}.{{ $config }}={{ $configValue }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            - --port={{ .Values.l2geth.ports.p2p.portTCP }}
+            - --discovery.port={{ .Values.l2geth.ports.p2p.portUDP }}
+
+            {{- if .Values.importTarURL }}
+            # GC archive mode is required when we import the chain. Otherwise, imported data will be removed.
+            - --gcmode=archive
+            {{- end }}
+
+            {{- with .Values.extraArgs }}
+            # Other Arguments
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+
+          env:
+          {{- range $key, $value := .Values.l2geth.env }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+          {{- end }}
+
+          {{- if and .Values.livenessProbe .Values.l2geth.http.enabled }}
+          livenessProbe:
+            initialDelaySeconds: 15
+            periodSeconds: 60
+            tcpSocket:
+              port: http-rpc
+          {{- end }}
+
+          {{- if and .Values.readinessProbe .Values.l2geth.http.enabled }}
+          readinessProbe:
+            initialDelaySeconds: 15
+            periodSeconds: 60
+            tcpSocket:
+              port: http-rpc
+          {{- end }}
+
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.l2geth.args.datadir }}
+            - name: jwt
+              mountPath: /jwt
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+      volumes:
+        - name: jwt
+          secret:
+            secretName: {{ .Values.l2geth.jwt.existingSecret.name | default "jwt-secret" }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        annotations:
+          "helm.sh/resource-policy": keep
+        labels:
+          {{- include "l2geth.selectorLabels" $ | nindent 10 }}
+      spec:
+        {{- toYaml .Values.volumeClaimSpec | nindent 8 }}
