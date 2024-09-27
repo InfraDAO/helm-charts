@@ -142,6 +142,6 @@ spec:
         annotations:
           "helm.sh/resource-policy": keep
         labels:
-          {{- include "geth.selectorLabels" $ | nindent 8 }}
+          {{- include "geth.selectorLabels" $ | nindent 10 }}
       spec:
         {{- toYaml .Values.volumeClaimSpec | nindent 8 }}
