@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "dtl.fullname" . }}
+  labels:
+    {{- include "dtl.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "dtl.fullname" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "dtl.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "dtl.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ template "dtl.fullname" . }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: port
+              containerPort: {{ .Values.dtl.env.DATA_TRANSPORT_LAYER__SERVER_PORT }}
+              protocol: TCP
+          command:
+            - exec node dist/src/services/run.js
+
+          {{- with .Values.args }}
+          # Arguments
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+          env:
+          {{- range $key, $value := .Values.dtl.env}}
+          - name: {{ $key }}
+            value: {{ $value }}
+          {{- end }}
+
+          {{- if .Values.livenessProbe }}
+          livenessProbe:
+            initialDelaySeconds: 15
+            periodSeconds: 60
+            tcpSocket:
+              port: port
+          {{- end }}
+          {{- if .Values.readinessProbe }}
+          readinessProbe:
+            initialDelaySeconds: 15
+            periodSeconds: 60
+            tcpSocket:
+              port: port
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: db
+              mountPath: {{ .Values.dtl.env.DATA_TRANSPORT_LAYER__DB_PATH }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: db
+        annotations:
+          "helm.sh/resource-policy": keep
+        labels:
+          {{- include "dtl.selectorLabels" $ | nindent 10 }}
+      spec:
+        {{- toYaml .Values.volumeClaimSpec | nindent 8 }}

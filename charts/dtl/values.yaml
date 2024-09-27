@@ -1,0 +1,142 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  # Image
+  repository: ethereumoptimism/data-transport-layer
+  # Overrides the image tag
+  # @default Chart.appVersion
+  tag: ""
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+rbac:
+  # Specifies whether RBAC resources are to be created
+  create: true
+  # Required ClusterRole rules
+  # @default See `values.yaml`
+  clusterRules:
+     # Required to obtain the nodes external IP
+    - apiGroups: [""]
+      resources:
+      - "nodes"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+  # Required ClusterRole rules
+  # @default See `values.yaml`
+  rules:
+    # Required to get information about the serices nodePort.
+    - apiGroups: [""]
+      resources:
+      - "services"
+      verbs:
+      - "get"
+      - "list"
+      - "watch"
+
+# Enable to scrape the metrics endpoint. [prometheus-operator](https://github.com/prometheus-operator/prometheus-operator)
+serviceMonitor:
+  enabled: false
+  path: /metrics
+  labels: {}
+  interval:
+  scrapeTimeout:
+  relabelings: []
+
+grafana:
+  # Enable creation of Grafana dashboards. [Grafana chart](https://github.com/grafana/helm-charts/tree/main/charts/grafana#grafana-helm-chart) must be configured to search this namespace, see `sidecar.dashboards.searchNamespace`
+  dashboards: false
+  # Must match `sidecar.dashboards.label` value for the [Grafana chart](https://github.com/grafana/helm-charts/tree/main/charts/grafana#grafana-helm-chart)
+  dashboardsConfigMapLabel: grafana_dashboard
+  # Must match `sidecar.dashboards.labelValue` value for the [Grafana chart](https://github.com/grafana/helm-charts/tree/main/charts/grafana#grafana-helm-chart)
+  dashboardsConfigMapLabelValue: "1"
+
+dtl:
+  env:
+    DATA_TRANSPORT_LAYER__ADDRESS_MANAGER: 0xdE1FCfB0851916CA5101820A69b13a4E276bd81F
+    DATA_TRANSPORT_LAYER__CONFIRMATIONS: 12
+    DATA_TRANSPORT_LAYER__DANGEROUSLY_CATCH_ALL_ERRORS: true
+    DATA_TRANSPORT_LAYER__DB_PATH: /db
+    DATA_TRANSPORT_LAYER__ENABLE_METRICS: true
+    DATA_TRANSPORT_LAYER__ETH_NETWORK_NAME: mainnet
+    DATA_TRANSPORT_LAYER__L2_CHAIN_ID: 10
+    DATA_TRANSPORT_LAYER__LOGS_PER_POLLING_INTERVAL: 2000
+    DATA_TRANSPORT_LAYER__NODE_ENV: production
+    DATA_TRANSPORT_LAYER__POLLING_INTERVAL: 5000
+    DATA_TRANSPORT_LAYER__SENTRY_TRACE_RATE: "0.05"
+    DATA_TRANSPORT_LAYER__SERVER_HOSTNAME: "0.0.0.0"
+    DATA_TRANSPORT_LAYER__SERVER_PORT: 7878
+    DATA_TRANSPORT_LAYER__TRANSACTIONS_PER_POLLING_INTERVAL: 1000
+    DATA_TRANSPORT_LAYER__DEFAULT_BACKEND: l1
+    DATA_TRANSPORT_LAYER__L1_GAS_PRICE_BACKEND: l1
+    DATA_TRANSPORT_LAYER__SYNC_FROM_L1: true
+    DATA_TRANSPORT_LAYER__SYNC_FROM_L2: false
+    DATA_TRANSPORT_LAYER__L1_RPC_ENDPOINT: http://l1eth:1234 # RPC endpoint for an L1 node
+
+  # CLI arguments
+  args: []
+    # - --myArg
+  
+# Extra labels to attach to the Pod for matching against
+extraLabels: {}
+
+# [PersistentVolumeClaimSpec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#persistentvolumeclaimspec-v1-core) for storage
+volumeClaimSpec:
+  accessModes: 
+    - "ReadWriteOnce"
+  # The storage class to use when provisioning a persistent volume, will use your default storage class if not specified
+  # storageClassName:
+  resources:
+    requests:
+      # The amount of disk space to provision
+      storage: 200Gi
+      
+# Increasing the grace termination period prevents Kubernetes
+# from killing the node process prematurely. Premature shutdown
+# can lead to data integrity issues
+# Amount of time to wait before force-killing the container
+terminationGracePeriodSeconds: 60
+
+# Annotations for the `Pod`
+podAnnotations: {}
+
+#TODO: check if need to run as root
+# Pod-wide security context
+podSecurityContext:
+  runAsNonRoot: false # Sadly Nethermind's container needs to run as root
+  runAsUser: 0
+  runAsGroup: 0
+  fsGroup: 0
+
+service:
+  type: ClusterIP
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  #   ephemeral-storage: 100Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  #   ephemeral-storage: 100Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

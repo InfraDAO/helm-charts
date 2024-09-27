@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dtl.fullname" . }}
+  labels:
+    {{- include "dtl.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: port
+      port: {{ .Values.dtl.env.DATA_TRANSPORT_LAYER__SERVER_PORT }}
+      targetPort: port
+  selector:
+    {{- include "dtl.selectorLabels" . | nindent 4 }}
