@@ -1,5 +1,16 @@
 apiVersion: v1
 entries:
+  dtl:
+  - apiVersion: v2
+    appVersion: 0.5.56
+    created: "2024-09-27T04:04:35.729877924Z"
+    description: Data Transport Layer for Ethereum Optimism
+    digest: 2602f08952e35bb94da88d4122536c514a52ede50b15a6120ac7ce25d13606e5
+    name: dtl
+    type: application
+    urls:
+    - https://github.com/InfraDAO/helm-charts/releases/download/dtl-0.0.1/dtl-0.0.1.tgz
+    version: 0.0.1
   erigon:
   - apiVersion: v2
     appVersion: v1.10.26
@@ -57,4 +68,4 @@ entries:
     urls:
     - https://github.com/InfraDAO/helm-charts/releases/download/op-stack-0.0.0/op-stack-0.0.0.tgz
     version: 0.0.0
-generated: "2024-09-27T02:50:23.611392261Z"
+generated: "2024-09-27T04:04:35.729888143Z"
