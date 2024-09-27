@@ -23,6 +23,17 @@ entries:
     urls:
     - https://github.com/InfraDAO/helm-charts/releases/download/geth-0.0.4/geth-0.0.4.tgz
     version: 0.0.4
+  l2geth:
+  - apiVersion: v2
+    appVersion: 0.5.31
+    created: "2024-09-27T02:50:23.379061452Z"
+    description: A Helm chart for Legacy Geth, l2geth.
+    digest: 154bd49391f3a5eede742f4f42ff559869b02b8894db5aff1944132165f391d6
+    name: l2geth
+    type: application
+    urls:
+    - https://github.com/InfraDAO/helm-charts/releases/download/l2geth-0.0.1/l2geth-0.0.1.tgz
+    version: 0.0.1
   op-node:
   - apiVersion: v2
     appVersion: v1.9.1
@@ -46,4 +57,4 @@ entries:
     urls:
     - https://github.com/InfraDAO/helm-charts/releases/download/op-stack-0.0.0/op-stack-0.0.0.tgz
     version: 0.0.0
-generated: "2024-09-11T01:24:47.670754876Z"
+generated: "2024-09-27T02:50:23.611392261Z"
