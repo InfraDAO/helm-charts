@@ -23,19 +23,15 @@ spec:
             - name: port
               containerPort: {{ .Values.dtl.env.DATA_TRANSPORT_LAYER__SERVER_PORT }}
               protocol: TCP
-          command:
-            - exec node dist/src/services/run.js
-
+          command: ["node", "dist/src/services/run.js"]
           {{- with .Values.args }}
-          # Arguments
-          args:
             {{- toYaml . | nindent 12 }}
           {{- end }}
 
           env:
           {{- range $key, $value := .Values.dtl.env}}
           - name: {{ $key }}
-            value: {{ $value }}
+            value: {{ $value | quote }}
           {{- end }}
 
           {{- if .Values.livenessProbe }}

@@ -41,7 +41,7 @@ spec:
                       wget -c "$SNAPSHOT_URL" -O - | zstd -d | tar -x -C "$STORAGE_PATH"
                   elif [[ "$SNAPSHOT_URL" == *.zst ]]; then
                       echo "*.zst file detected..."
-                      wget -c "$SNAPSHOT_URL" -O - | zstd -d -rm -o "$STORAGE_PATH"
+                      wget -c "$SNAPSHOT_URL" -O - | zstd -d -o "$STORAGE_PATH"
                   elif [[ "$SNAPSHOT_URL" == *.tar ]]; then
                       echo "*.tar file detected..."
                       wget -c "$SNAPSHOT_URL" -O - | tar -xz -C "$STORAGE_PATH"
@@ -70,24 +70,17 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             {{- range $key, $value := .Values.l2geth.ports }}
-            {{- if or $value.enabled (eq $key "authrpc") }}
+            {{- if $value.enabled }}
             - name: {{ $key }}
-              containerPort: {{ $value.port }}
+              containerPort: {{ if eq $key "metrics" }}8686{{ end }}{{ $value.port }}
             {{- end }}
             {{- end }}
             - name: rpc
               containerPort: {{ .Values.l2geth.env.RPC_PORT }}
-            - name: tcp-p2p
-              containerPort: {{ .Values.l2geth.ports.p2p.portTCP }}
-              protocol: TCP
-            - name: udp-p2p
-              containerPort: {{ .Values.l2geth.ports.p2p.portUDP }}
-              protocol: UDP
+            - name: p2p
+              containerPort: {{ .Values.l2geth.ports.p2p.port }}
           command: ["/usr/local/bin/geth"]
           args:
-            # jwt
-            - --authrpc.jwtsecret=/jwt/{{ .Values.l2geth.jwt.existingSecret.key | default "jwtSecret" }}
-
             # Basic args
             {{- range $key, $value := .Values.l2geth.args }}
             - --{{ $key }}={{ $value }}
@@ -95,18 +88,17 @@ spec:
 
             # Ports configs
             {{- range $key, $value := .Values.l2geth.ports }}
-            {{- if or $value.enabled (eq $key "authrpc") }}
+            {{- if $value.enabled }}
             {{- range $config, $configValue := $value }}
             {{- if eq $config "enabled" }}
             - --{{ $key }}
             {{- else }}
-            - --{{ $key }}.{{ $config }}={{ $configValue }}
+            - --{{ $key }}{{ $config }}={{ $configValue }}
             {{- end }}
             {{- end }}
             {{- end }}
             {{- end }}
-            - --port={{ .Values.l2geth.ports.p2p.portTCP }}
-            - --discovery.port={{ .Values.l2geth.ports.p2p.portUDP }}
+            - --port={{ .Values.l2geth.ports.p2p.port }}
 
             {{- if .Values.importTarURL }}
             # GC archive mode is required when we import the chain. Otherwise, imported data will be removed.
@@ -143,16 +135,10 @@ spec:
           volumeMounts:
             - name: data
               mountPath: {{ .Values.l2geth.args.datadir }}
-            - name: jwt
-              mountPath: /jwt
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 
-      volumes:
-        - name: jwt
-          secret:
-            secretName: {{ .Values.l2geth.jwt.existingSecret.name | default "jwt-secret" }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

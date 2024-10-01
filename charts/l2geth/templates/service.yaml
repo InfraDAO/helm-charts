@@ -8,10 +8,10 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     {{- range $key, $value := .Values.l2geth.ports }}
-    {{- if or $value.enabled (eq $key "authrpc") }}
+    {{- if $value.enabled }}
     - name: {{ $key }}
-      port: {{ $value.port }}
-      targetPort: {{ $value.port }}
+      port: {{ if eq $key "metrics" }}8686{{ end }}{{ $value.port }}
+      targetPort: {{ $key }}
     {{- end }}
     {{- end }}
     {{- if .Values.l2geth.env.RPC_ENABLE }}
@@ -19,17 +19,11 @@ spec:
       port: {{ .Values.l2geth.env.RPC_PORT }}
       targetPort: rpc
     {{- end }}
-    - name: tcp-p2p
-      port: {{ .Values.l2geth.ports.p2p.portTCP }}
-      targetPort: tcp-p2p
-      {{- if and (ne .Values.service.type "ClusterIP") .Values.service.p2pNodePortTCP }}
-      nodePort: {{ .Values.service.p2pNodePortTCP }}
-      {{- end }}
-    - name: udp-p2p
-      port: {{ .Values.l2geth.ports.p2p.portUDP }}
-      targetPort: udp-p2p
-      {{- if and (ne .Values.service.type "ClusterIP") .Values.service.p2pNodePortUDP }}
-      nodePort: {{ .Values.service.p2pNodePortUDP }}
+    - name: p2p
+      port: {{ .Values.l2geth.ports.p2p.port }}
+      targetPort: p2p
+      {{- if and (ne .Values.service.type "ClusterIP") .Values.service.p2pNodePort }}
+      nodePort: {{ .Values.service.p2pNodePort }}
       {{- end }}
   selector:
     {{- include "l2geth.selectorLabels" . | nindent 4 }}

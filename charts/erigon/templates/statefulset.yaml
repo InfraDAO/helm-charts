@@ -33,18 +33,18 @@ spec:
                   echo "Clearing existing chaindata..."
                   rm -rf "$STORAGE_PATH"
                   echo "Downloading and extracting $SNAPSHOT_URL..."
-                  mkdir -p "$STORAGE_PATH"
+                  mkdir -p "$STORAGE_PATH"/chaindata
 
                   # Decompress based on file extension
                   if [[ "$SNAPSHOT_URL" == *.tar.zst ]]; then
                       echo "*.tar.zst file detected..."
-                      wget -c "$SNAPSHOT_URL" -O - | zstd -d | tar -x -C "$STORAGE_PATH"
+                      wget -c "$SNAPSHOT_URL" -O - | zstd -d | tar -x -C "$STORAGE_PATH"/chaindata/mdbx.dat
                   elif [[ "$SNAPSHOT_URL" == *.zst ]]; then
                       echo "*.zst file detected..."
-                      wget -c "$SNAPSHOT_URL" -O - | zstd -d -rm -o "$STORAGE_PATH"
+                      wget -c "$SNAPSHOT_URL" -O - | zstd -d -o "$STORAGE_PATH"/chaindata/mdbx.dat
                   elif [[ "$SNAPSHOT_URL" == *.tar ]]; then
                       echo "*.tar file detected..."
-                      wget -c "$SNAPSHOT_URL" -O - | tar -xz -C "$STORAGE_PATH"
+                      wget -c "$SNAPSHOT_URL" -O - | tar -xz -C "$STORAGE_PATH"/chaindata/mdbx.dat
                   else
                       echo "Unrecognised file format downloaded. Only .tar, .zst and .tar.zst supported."
                       exit 1

@@ -41,7 +41,7 @@ spec:
                       wget -c "$SNAPSHOT_URL" -O - | zstd -d | tar -x -C "$STORAGE_PATH"
                   elif [[ "$SNAPSHOT_URL" == *.zst ]]; then
                       echo "*.zst file detected..."
-                      wget -c "$SNAPSHOT_URL" -O - | zstd -d -rm -o "$STORAGE_PATH"
+                      wget -c "$SNAPSHOT_URL" -O - | zstd -d -o "$STORAGE_PATH"
                   elif [[ "$SNAPSHOT_URL" == *.tar ]]; then
                       echo "*.tar file detected..."
                       wget -c "$SNAPSHOT_URL" -O - | tar -xz -C "$STORAGE_PATH"
