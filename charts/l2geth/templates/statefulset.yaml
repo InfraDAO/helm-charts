@@ -17,14 +17,13 @@ spec:
       {{- if .Values.restoreSnapshot.enabled }}
       initContainers:
         - name: snapshot
-          image: busybox:stable
+          image: danysk/zstd:1.5.6
           imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c"]
           args:
             - |
               set -x
               STORAGE_PATH={{ .Values.l2geth.args.datadir }}
-              RESTORE_PATH={{ .Values.l2geth.args.datadir }}/l2geth/chaindata
               SNAPSHOT_URL={{ .Values.restoreSnapshot.snapshotUrl }}
 
               # If enabled and snapshot URL has been provided, restore snapshot
@@ -32,18 +31,35 @@ spec:
                 echo "Snapshot restoration enabled"
                 if [ ! -f "$STORAGE_PATH/from_snapshot" ] || [ "$(cat $STORAGE_PATH/from_snapshot)" != "${SNAPSHOT_URL}" ]; then
                   echo "Clearing existing chaindata..."
-                  rm -rf "$RESTORE_PATH"
+                  rm -rf "$STORAGE_PATH"
                   echo "Downloading and extracting $SNAPSHOT_URL..."
-                  mkdir -p "$RESTORE_PATH"
-                  wget -c "${SNAPSHOT_URL}" -O - | tar -xz -C "$RESTORE_PATH"
+                  mkdir -p "$STORAGE_PATH"
+
+                  # Decompress based on file extension
+                  if [[ "$SNAPSHOT_URL" == *.tar.zst ]]; then
+                      echo "*.tar.zst file detected..."
+                      wget -c "$SNAPSHOT_URL" -O - | zstd -d | tar -x -C "$STORAGE_PATH"
+                  elif [[ "$SNAPSHOT_URL" == *.zst ]]; then
+                      echo "*.zst file detected..."
+                      wget -c "$SNAPSHOT_URL" -O - | zstd -d -rm -o "$STORAGE_PATH"
+                  elif [[ "$SNAPSHOT_URL" == *.tar ]]; then
+                      echo "*.tar file detected..."
+                      wget -c "$SNAPSHOT_URL" -O - | tar -xz -C "$STORAGE_PATH"
+                  else
+                      echo "Unrecognised file format downloaded. Only .tar, .zst and .tar.zst supported."
+                      exit 1
+                  fi
+
                   [ "$?" != "0" ] && echo "Streaming download failed" && exit 1
                   echo "${SNAPSHOT_URL}" > ${STORAGE_PATH}/from_snapshot
+                  echo "Snapshot finished!"
                 else
                   echo "Snapshot configuration already restored, continuing..."
                 fi
               else
                 echo "Snapshot url missing, skipping..."
               fi
+
           volumeMounts:
             - name: data
               mountPath: {{ .Values.l2geth.args.datadir }}
@@ -108,20 +124,20 @@ spec:
             value: {{ $value | quote }}
           {{- end }}
 
-          {{- if and .Values.livenessProbe .Values.l2geth.http.enabled }}
+          {{- if .Values.livenessProbe }}
           livenessProbe:
             initialDelaySeconds: 15
             periodSeconds: 60
             tcpSocket:
-              port: http-rpc
+              port: rpc
           {{- end }}
 
-          {{- if and .Values.readinessProbe .Values.l2geth.http.enabled }}
+          {{- if .Values.readinessProbe }}
           readinessProbe:
             initialDelaySeconds: 15
             periodSeconds: 60
             tcpSocket:
-              port: http-rpc
+              port: rpc
           {{- end }}
 
           volumeMounts:

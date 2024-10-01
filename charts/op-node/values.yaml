@@ -44,7 +44,7 @@ rbac:
       - "list"
       - "watch"
 
-# Enable to scrape the metrics endpoint. [prometheus-operator](https://github.com/prometheus-op-nodeerator/prometheus-operator)
+# Enable to scrape the metrics endpoint. [prometheus-operator](https://github.com/prometheus-operator/prometheus-operator)
 serviceMonitor:
   enabled: false
   path: /metrics
