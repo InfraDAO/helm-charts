@@ -60,6 +60,16 @@ entries:
   op-stack:
   - apiVersion: v2
     appVersion: 0.0.0
+    created: "2024-10-03T13:20:49.042673572Z"
+    description: A chart for running optimism with erigon and geth
+    digest: 3e43908083c4fe1adf8c48d37b9b3cebc6d467dfd593d7a538949232a5186c55
+    name: op-stack
+    type: application
+    urls:
+    - https://github.com/InfraDAO/helm-charts/releases/download/op-stack-0.0.1/op-stack-0.0.1.tgz
+    version: 0.0.1
+  - apiVersion: v2
+    appVersion: 0.0.0
     created: "2024-09-11T01:24:47.67074624Z"
     description: A chart for running optimism with erigon and geth
     digest: e753826d4f35085fda8f8bdd436979f19de585a3e71a9e9fbcf4c92c947e5e25
@@ -68,4 +78,4 @@ entries:
     urls:
     - https://github.com/InfraDAO/helm-charts/releases/download/op-stack-0.0.0/op-stack-0.0.0.tgz
     version: 0.0.0
-generated: "2024-09-27T04:04:35.729888143Z"
+generated: "2024-10-03T13:20:49.042683721Z"
